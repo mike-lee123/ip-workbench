@@ -701,7 +701,6 @@ def load_template_data(template_type: str, custom_name: str = ""):
         ]
 
     else:
-        # 通用自訂主題
         title = custom_name.strip() if custom_name.strip() else "自訂技術發明標的"
         st.session_state["patent_title_val"] = title
         st.session_state["ipc_input_val"] = ""
@@ -724,7 +723,7 @@ def load_template_data(template_type: str, custom_name: str = ""):
 # ==============================================================================
 st.set_page_config(
     page_title="智慧財產權整合工作台 (離線旗艦版)",
-    page_icon="🛡️️",
+    page_icon="🛡️",
     layout="wide"
 )
 
@@ -833,19 +832,30 @@ with tab_patent:
     col_input1, col_input2, col_input3 = st.columns([2, 1, 1])
 
     with col_input1:
-        # 使用 value 綁定 session_state，讓按鈕與表單提交能精確連動刷新
         target_title = st.text_input(
             "請輸入專利標的名稱：",
             value=st.session_state.get("patent_title_val", ""),
-            placeholder="例如：水陸兩用汽車之動力切換與推進整合系統"
+            placeholder="例如：水陸兩用汽車之動力切換與推進整合系統",
+            key="input_target_title_main"
         )
         st.session_state["patent_title_val"] = target_title
 
     with col_input2:
-        ipc_input = st.text_input("IPC 分類號 (逗號隔開)", value=st.session_state.get("ipc_input_val", ""), placeholder="例: B60F 3/00, B63H 11/00")
+        ipc_input = st.text_input(
+            "IPC 分類號 (逗號隔開)",
+            value=st.session_state.get("ipc_input_val", ""),
+            placeholder="例: B60F 3/00, B63H 11/00",
+            key="input_ipc_code_main"
+        )
         st.session_state["ipc_input_val"] = ipc_input
+        
     with col_input3:
-        cpc_input = st.text_input("CPC 分類號 (逗號隔開)", value=st.session_state.get("cpc_input_val", ""), placeholder="例: B60F 3/00, B63H 11/00")
+        cpc_input = st.text_input(
+            "CPC 分類號 (逗號隔開)",
+            value=st.session_state.get("cpc_input_val", ""),
+            placeholder="例: B60F 3/00, B63H 11/00",
+            key="input_cpc_code_main"
+        )
         st.session_state["cpc_input_val"] = cpc_input
 
     st.markdown("---")
@@ -854,29 +864,29 @@ with tab_patent:
     col_p1, col_p2, col_p3 = st.columns(3)
     with col_p1:
         st.markdown("#### 支柱 A：應用標的 (Target)")
-        p1_name = st.text_input("支柱 A 名稱", value=st.session_state.get("p1_n_val", ""))
+        p1_name = st.text_input("支柱 A 名稱", value=st.session_state.get("p1_n_val", ""), key="input_p1_name")
         st.session_state["p1_n_val"] = p1_name
-        p1_en = st.text_area("英文關鍵字 (逗號隔開)", value=st.session_state.get("p1_e_val", ""), height=90)
+        p1_en = st.text_area("英文關鍵字 (逗號隔開)", value=st.session_state.get("p1_e_val", ""), height=90, key="input_p1_en")
         st.session_state["p1_e_val"] = p1_en
-        p1_zh = st.text_area("中文關鍵字 (逗號隔開)", value=st.session_state.get("p1_z_val", ""), height=90)
+        p1_zh = st.text_area("中文關鍵字 (逗號隔開)", value=st.session_state.get("p1_z_val", ""), height=90, key="input_p1_zh")
         st.session_state["p1_z_val"] = p1_zh
 
     with col_p2:
         st.markdown("#### 支柱 B：核心手段 (Mechanism)")
-        p2_name = st.text_input("支柱 B 名稱", value=st.session_state.get("p2_n_val", ""))
+        p2_name = st.text_input("支柱 B 名稱", value=st.session_state.get("p2_n_val", ""), key="input_p2_name")
         st.session_state["p2_n_val"] = p2_name
-        p2_en = st.text_area("英文關鍵字 (逗號隔開)", value=st.session_state.get("p2_e_val", ""), height=90)
+        p2_en = st.text_area("英文關鍵字 (逗號隔開)", value=st.session_state.get("p2_e_val", ""), height=90, key="input_p2_en")
         st.session_state["p2_e_val"] = p2_en
-        p2_zh = st.text_area("中文關鍵字 (逗號隔開)", value=st.session_state.get("p2_z_val", ""), height=90)
+        p2_zh = st.text_area("中文關鍵字 (逗號隔開)", value=st.session_state.get("p2_z_val", ""), height=90, key="input_p2_zh")
         st.session_state["p2_z_val"] = p2_zh
 
     with col_p3:
         st.markdown("#### 支柱 C：技術功效 (Effect)")
-        p3_name = st.text_input("支柱 C 名稱", value=st.session_state.get("p3_n_val", ""))
+        p3_name = st.text_input("支柱 C 名稱", value=st.session_state.get("p3_n_val", ""), key="input_p3_name")
         st.session_state["p3_n_val"] = p3_name
-        p3_en = st.text_area("英文關鍵字 (逗號隔開)", value=st.session_state.get("p3_e_val", ""), height=90)
+        p3_en = st.text_area("英文關鍵字 (逗號隔開)", value=st.session_state.get("p3_e_val", ""), height=90, key="input_p3_en")
         st.session_state["p3_e_val"] = p3_en
-        p3_zh = st.text_area("中文關鍵字 (逗號隔開)", value=st.session_state.get("p3_z_val", ""), height=90)
+        p3_zh = st.text_area("中文關鍵字 (逗號隔開)", value=st.session_state.get("p3_z_val", ""), height=90, key="input_p3_zh")
         st.session_state["p3_z_val"] = p3_zh
 
     st.markdown("---")
