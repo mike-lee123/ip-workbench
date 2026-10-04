@@ -14,7 +14,7 @@ from typing import List, Dict
 from PIL import Image, ImageDraw, ImageFont
 
 # ==============================================================================
-# 一、 核心資料結構與專利檢索邏輯 (純本地扁平化演算法)
+# 一、 核心資料結構與專利檢索邏輯
 # ==============================================================================
 @dataclass
 class TechnicalPillar:
@@ -52,7 +52,6 @@ class PatentSearchBuilder:
         for p in self.pillars:
             if p.en_keywords:
                 formatted_kws = []
-                # 取前 3 個核心關鍵字，並過濾過長片語
                 for kw in p.en_keywords[:3]:
                     clean_kw = re.sub(r'[\";*]', '', kw).strip()
                     if not clean_kw:
@@ -187,7 +186,7 @@ class PatentSearchBuilder:
         return "\n".join(lines)
 
 # ==============================================================================
-# 二、 專利號爬取核心 (原生 UTF-8 解碼，免 API)
+# 二、 專利號爬取核心
 # ==============================================================================
 def fetch_patent_data_from_google(patent_no: str) -> dict:
     clean_pno = re.sub(r'[\s\-_/]', '', patent_no).upper()
@@ -511,101 +510,25 @@ IP_LAWS_DB = [
     }
 ]
 
-# ==============================================================================
-# 修訂版完整操作手冊 (同步整合純本地推理、無分號檢索與防死鎖架構)
-# ==============================================================================
 USER_MANUAL_MARKDOWN = """# 📖 智慧財產權整合工作台 操作手冊（純本機離線旗艦版）
 
-本工作台專為發明人、專利代理人、RD 研發工程師與企業法務設計，採用 **100% 純本機運算架構**，無須綁定任何外部付費 API（如 OpenAI、Claude 等），亦無機密資料外洩風險。系統整合了專利檢索式生成、前案 Claims 爬取比對、TIPO 官方規範商標圖樣即時合成，以及營業秘密與進步性申復答辯理由書產生庫。
+本工作台專為發明人、專利代理人、RD 研發工程師與企業法務設計，採用 **100% 純本機運算架構**，無須綁定任何外部付費 API。
 
 ---
 
 ## 模組一：📄 專利檢索與 Claims 比對矩陣
 
-### 1. 智慧主題推導與雙向即時連動（免手動複製貼上）
-* **側邊欄熱門範本一鍵切換**：
-  * 提供「☀️ 溫室隔熱塗料」、「⚡ 氫能觸媒轉換」、「✂️ 果樹剪枝機」、「🌱 土壤熱水殺菌」等經典技術主題。
-  * 點擊按鈕後，系統以毫秒級速度直接重繪主畫面，同步帶出所屬 IPC/CPC 分類號、三支柱關鍵字與 Claim 1 要件。
-* **任意主題自動推導（本機語意推理引擎）**：
-  * 在側邊欄「💡 任意主題自動產生器」或主畫面「1. 請輸入專利標的名稱」輸入任意關鍵字（例如：`氫燃料汽車觸媒轉換器`、`溫室屋頂隔熱塗料`、`果樹自走式剪枝機`）。
-  * 按下 **`Enter`** 或點擊 **「🚀 即刻推導並連動」**，系統將自動解析技術動詞與名詞，自動補全：
-    * **IPC / CPC 官方國際專利分類號**（如 `B01D 53/94`, `C09D 5/33`, `A01G 3/08`）。
-    * **技術特徵三支柱（Target / Mechanism / Effect）**之中英文專業詞彙展開。
-    * **申請專利範圍請求項第 1 項（Claim 1）**四大要件（Element 1A～1D）草稿。
+### 1. 智慧主題推導與雙向即時連動
+* 在側邊欄或主畫面輸入任意關鍵字（例如：`氫燃料低壓儲存罐`、`氫燃料汽車觸媒轉換器`、`溫室屋頂隔熱塗料`），按下 Enter 或點擊推導按鈕，系統將以 Dynamic Key 強制整頁重繪，100% 同步帶出 IPC/CPC、三支柱與 Claims！
 
 ### 2. 前案專利全文爬取（直連 Google Patents）
-* **支援格式**：支援輸入各國專利號（公開號／公告號），例如 `US8608931B2`、`CN110016700A`、`TW202301234A`。
-* **點擊「📥 爬取前案專利內容」**：系統直接連線 Google Patents 原文，透過原生 UTF-8 解碼擷取說明書摘要（Abstract）與申請專利範圍條文（Claims），並在介面提供快速展開預覽與原網址直達連結。
+* 支援輸入各國公開號/公告號（如 `US8608931B2`），直接以 UTF-8 抓取 Abstract 與 Claims 原文。
 
-### 3. 全要件原則比對矩陣（All-Elements Rule Claim Chart）
-* **⚡ 一鍵自動帶入前案對應技術**：
-  * 點擊「⚡ 一鍵自動帶入 [專利號] 比對矩陣」按鈕，系統會自動將當前爬取的前案專利號動態寫入 Element 1A~1D 的前案對照欄。
-  * 自動配置符合性判定（`YES (字面讀取)`、`NO (不符/差異點)`、`均等成立 (DOE)`），並預載**核心進步性防線說明**。
-* **線上動態編輯器**：
-  * 支援在網頁上直接雙擊儲存格編輯修訂文字，按 Enter 即可即時存入記憶體。
-  * 點擊表格下方空白列可自行增列 Claim 2、Claim 3 等附屬項特徵。
+### 3. 全要件原則比對矩陣（All-Elements Rule）
+* 點擊「⚡ 一鍵自動帶入比對矩陣」即可將當前引證案動態配入表格與申復書中。
 
-### 4. 官方相容檢索式生成與匯出
-* **點擊「🚀 生成專利檢索式並整合比對報告」**：
-  * **Google Patents 語法**：採用扁平布林架構，已徹底排除無效的結尾分號（`;`），並自動修剪過長片語（限制為 2 詞核心精準短語），杜絕「No results found」解析錯誤；支援一鍵複製與一鍵前往檢索。
-  * **台灣智慧局 GPSS 語法**：自動封裝 `TI,AB,CL=(...) AND IC=(...)` 官方檢索欄位格式，支援一鍵開啟 GPSS 系統。
-  * **檔案匯出**：
-    * 📥 **下載完整檢索分析報告 (.txt)**：匯出包含分類號、三支柱、檢索式、Claims 撰寫檢核表、比對矩陣與前案附錄的正式報告。
-    * 📊 **下載前案比對矩陣 (.csv)**：支援匯出標準 UTF-8 含 BOM 的試算表檔案，Excel 開啟不亂碼。
-
----
-
-## 模組二：🏷️ 商標權佈局與圖樣生成器
-
-### 1. 規範相容性保證
-* 嚴格依照經濟部智慧財產局（TIPO）商標 E-filing 線上申辦規範輸出：
-  * **解析度**：300 DPI 高畫質。
-  * **尺寸大小**：精確輸出 8.0 × 8.0 cm（等同於 945 × 945 像素）。
-  * **底色格式**：純白底色（#FFFFFF）無壓縮 JPEG 格式。
-
-### 2. 多功能即時排版控制
-* **多行文字支援**：文字框直接按下 Enter 即可換行，自動計算行距與垂直居中。
-* **排版模式切換**：
-  * `純文字模式`：適合標準文字商標，字級滑桿支援 28~120 pt 動態無損縮放。
-  * `複合商標（上圖下文）`：上傳 Logo 圖檔後，系統自動將 Logo 縮放至黃金比例置頂，文字排列於下方。
-  * `複合商標（左圖右文）`：自動將 Logo 置於左側，商標文字與副標居右對齊。
-* **Logo 自動填白**：若上傳具透明通道的 PNG 圖片，本地 Pillow 繪圖引擎會自動填補白底，防止智財局系統判定黑底毀損。
-* **字型相容性**：內建自動偵測 Windows、macOS 與 Linux 雲端主機中文字型，於 Streamlit Cloud 部署時會自動下載開源 Noto Sans TC，杜絕豆腐方塊（缺字）。
-
----
-
-## 模組三：⚖️ 智財法規速查 ＆ 答辯申復理由書產生器
-
-### 1. 法規與審查基準速查庫
-* 涵蓋**專利法**（第21條、第22條新穎性/進步性、第26條可據以實現、第58條排他權）。
-* 涵蓋**化學配方專題**（協同效應 Synergistic Effect 舉證要件、實施例充分揭露與保留秘密之界線）。
-* 涵蓋**營業秘密法**（第2條法定三要件、第13條之1境內洩密罪、第13條之2意圖在境外使用罪加重刑責）。
-* 涵蓋**商標法**（第18條識別性、第30條第1項第10款混淆誤認之虞判定）。
-* 支援依類別篩選或即時文字模糊搜尋。
-
-### 2. 專利進步性申復答辯理由書（代理人標準格式）
-* 點擊「⚖️ 帶入進步性申復理由」，系統會以當前專利標的與引證案號自動套入代理人規格答辯書：
-  * **案由與前言聲明**：針對審查意見通知函（OA）引證案 D1 主張進步性抗辯。
-  * **審查基準法理依據**：引用專利法第22條第2項及審查基準非顯而易知性之突變增益判定原則。
-  * **實體爭點比對**：針對特定配比/架構（Element 1C）主張先前技術未教示（Teaching Away）與無法預期之技術功效。
-  * 支援線上文字框自由修訂、一鍵複製全文或匯出為 `.txt` 文件。
-
-### 3. 企業營業秘密離職保密切結書（側邊欄常駐）
-* 展開側邊欄「🔒 營業秘密離職切結書範本」：
-  * 具備完整法律定性條款（原料虛擬代號、特定工藝參數、進料成本、客戶名單）。
-  * 嚴格警示《營業秘密法》第13條之一（最高5年刑責）與第13條之二（意圖境外使用最高10年刑責）。
-  * 支援線上客製化企業名稱並即刻下載。
-
----
-
-## 快速故障排查（Troubleshooting）
-
-| 常見情境 | 可能原因 | 建議處置方式 |
-| :--- | :--- | :--- |
-| **輸入新主題後畫面未反映** | 瀏覽器快取或輸入中途未確認 | 於輸入框輸入文字後**務必按下 Enter 鍵**，或點擊側邊欄「🚀 即刻推導並連動」按鈕。 |
-| **Google Patents 顯示 0 筆** | 檢索式含非法分號或過度限制 | 檢查搜尋列結尾是否帶有 `;`；本版本已自動修剪長片語，直接點擊「一鍵前往 Google Patents 檢索」即可。 |
-| **前案爬取失敗 (HTTP 404/403)** | 專利號格式不符或該案尚未公開 | 請確認專利號無空格與特殊符號（例如輸入 `US8608931B2`，勿輸入 `US 8,608,931`）。 |
-| **商標文字在雲端顯示為方塊** | 雲端 Linux 主機缺少中文字型 | 本系統內建自動下載開源 Noto Sans TC 字型，稍待片刻重新整理即可正常渲染。 |
+### 4. 官方相容檢索式生成
+* 匯出符合 Google Patents（無結尾分號、短核心片語）與台灣 GPSS 規範的檢索式。
 """
 
 TRADE_SECRET_AGREEMENT_DOC = """營業秘密保密暨離職切結書
@@ -693,10 +616,9 @@ OA_ELECTROPLATING_DOC = """專利申復理由書（草稿）
 """
 
 # ==============================================================================
-# 六、 本地智財語意推理引擎 (即時覆寫字典架構)
+# 六、 本地智財語意推理引擎 (動態版本破除快取死鎖)
 # ==============================================================================
 def execute_semantic_synthesis(title: str):
-    """根據技術標的，推導分類號、三支柱與 Claims，並直接寫入狀態字典"""
     t = title.strip() if title.strip() else "自訂技術發明標的"
     low_t = t.lower()
 
@@ -706,7 +628,41 @@ def execute_semantic_synthesis(title: str):
     matched_p3_en, matched_p3_zh = [], []
 
     # 1. 標的領域推理 (Target)
-    if any(k in low_t for k in ["隔熱", "塗料", "漆", "屋頂", "降溫", "反射塗層"]):
+    if any(k in low_t for k in ["儲存罐", "儲氫", "低壓儲存", "鋼瓶", "氣罐", "儲存瓶"]):
+        matched_ipc.extend(["F17C 11/00", "C01B 3/00", "H01M 8/04"])
+        p1_name = "Target: 固態儲氫合金低壓儲氣罐與供氫系統"
+        matched_p1_en = ["low-pressure hydrogen tank", "metal hydride canister", "solid-state hydrogen storage"]
+        matched_p1_zh = ["低壓儲氫罐", "儲氫合金瓶", "固態儲氫", "車載供氫系統"]
+        p2_name = "Mechanism: 稀土金屬儲氫合金粉末與相變微熱管熱管理模組"
+        matched_p2_en = ["metal hydride alloy", "micro-channel heat exchanger", "internal fin", "phase change material"]
+        matched_p2_zh = ["AB5型儲氫合金", "鈦鐵系儲氫粉末", "內部翅片換熱管", "相變導熱模組", "過濾阻火器"]
+        p3_name = "Effect: 5 MPa 以下超安全儲存與快速吸放氫動力學"
+        matched_p3_en = ["low working pressure", "fast hydrogenation kinetics", "thermal runaway prevention"]
+        matched_p3_zh = ["5 MPa以下低壓安全", "杜絕高壓爆破風險", "快速吸放氫", "導熱均衡防膨脹碎化"]
+        claim_elements = [
+            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種用於{t}之儲氫容器，包含耐壓金屬外殼及內部氣體流道過濾閥件", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "提供容器基本耐壓與氣體進出介面。"},
+            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一收容於該外殼內部之固態儲氫材料，包含 AB5 型或 Ti-Fe 系金屬儲氫合金粉末", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "利用化學吸附於低壓下固態儲氫。"},
+            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "特定之內部多孔導熱翅片陣列與相變微熱管組件，於充放氫過程中將容器內部溫差控制於 5°C 以內，且最大工作壓力低於 5.0 MPa", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "NO (不符/差異點)", "差異/進步性說明": "【核心進步性防線】：傳統70 MPa高壓碳纖維瓶極度危險且吸放氫熱阻大；本案特定翅片結構解決合金粉末導熱係數低致使吸放氫遲滯之關鍵瓶頸。"},
+            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "一彈性緩衝微孔隔層，吸收儲氫合金吸放氫循環過程中之晶格體積膨脹應力", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "均等成立 (DOE)", "差異/進步性說明": "杜絕粉末粉化板結與罐體應力破裂。"}
+        ]
+    elif any(k in low_t for k in ["觸媒", "轉換器", "消氫"]):
+        matched_ipc.extend(["B01D 53/94", "B01J 23/42", "H01M 8/04"])
+        p1_name = "Target: 氫燃料電池汽車與排氣尾氣淨化系統"
+        matched_p1_en = ["hydrogen fuel cell", "exhaust aftertreatment", "tailpipe emission"]
+        matched_p1_zh = ["氫燃料電池汽車", "排氣後處理", "尾氣淨化", "陰極排氣"]
+        p2_name = "Mechanism: 鉑鈀貴金屬低溫催化塗層與蜂窩載體"
+        matched_p2_en = ["catalytic converter", "bimetallic catalyst", "honeycomb substrate"]
+        matched_p2_zh = ["觸媒轉換器", "鉑鈀催化劑", "蜂窩載體", "低溫消氫塗層"]
+        p3_name = "Effect: 超低溫消氫防爆燃與極致零排放"
+        matched_p3_en = ["hydrogen mitigation", "explosion suppression", "low-temperature light-off"]
+        matched_p3_zh = ["未反應殘氫消除", "防爆燃安全", "低起燃溫度", "耐水氣中毒"]
+        claim_elements = [
+            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種用於{t}之催化淨化裝置，包含外殼及蜂窩載體", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "排氣支撐。"},
+            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一負載於該載體表面之塗層，包含鉑(Pt)與鈀(Pd)雙金屬活性組分", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "微量殘氫低溫氧化。"},
+            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "40~90°C 排氣溫度下將氫氣濃度抑制於 1.0 vol% 以下之非爆炸極限", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "NO (不符/差異點)", "差異/進步性說明": "【核心進步性防線】：解決冷啟動低溫殘氫爆燃風險。"},
+            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "疏水性抗水氣凝結層，防止陰極尾氣水淹中毒", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "均等成立 (DOE)", "差異/進步性說明": "消除水淹。"}
+        ]
+    elif any(k in low_t for k in ["隔熱", "塗料", "漆", "屋頂", "降溫"]):
         matched_ipc.extend(["C09D 5/33", "C09D 7/61", "A01G 9/24"])
         p1_name = "Target: 溫室採光屋頂與透光覆蓋材"
         matched_p1_en = ["greenhouse roof", "agricultural film", "polycarbonate panel"]
@@ -722,23 +678,6 @@ def execute_semantic_synthesis(title: str):
             {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "包含近紅外反射粒子與中空微珠之隔熱填料", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "提供日照熱能反射功效。"},
             {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "特定固化配比，於植物光合有效輻射(PAR)波段維持高透射，且近紅外反射率大於 80%", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "NO (不符/差異點)", "差異/進步性說明": "【核心進步性防線】：前案阻熱時劣化作物受光，本案特定折射率平衡實現『高透光且高隔熱』之光熱分離。"},
             {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "耐雨水沖刷與抗紫外線光穩定構件", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "均等成立 (DOE)", "差異/進步性說明": "延長戶外耐候壽命。"}
-        ]
-    elif any(k in low_t for k in ["氫", "燃料電池", "觸媒", "轉換器", "消氫"]):
-        matched_ipc.extend(["B01D 53/94", "B01J 23/42", "H01M 8/04"])
-        p1_name = "Target: 氫燃料電池汽車與排氣尾氣淨化系統"
-        matched_p1_en = ["hydrogen fuel cell", "exhaust aftertreatment", "tailpipe emission"]
-        matched_p1_zh = ["氫燃料電池汽車", "排氣後處理", "尾氣淨化", "陰極排氣"]
-        p2_name = "Mechanism: 鉑鈀貴金屬低溫催化塗層與蜂窩載體"
-        matched_p2_en = ["catalytic converter", "bimetallic catalyst", "honeycomb substrate"]
-        matched_p2_zh = ["觸媒轉換器", "鉑鈀催化劑", "蜂窩載體", "低溫消氫塗層"]
-        p3_name = "Effect: 超低溫消氫防爆燃與極致零排放"
-        matched_p3_en = ["hydrogen mitigation", "explosion suppression", "low-temperature light-off"]
-        matched_p3_zh = ["未反應殘氫消除", "防爆燃安全", "低起燃溫度", "耐水氣中毒"]
-        claim_elements = [
-            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種用於{t}之催化淨化裝置，包含外殼及配置於其中之蜂窩載體", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "提供排氣流道支撐結構。"},
-            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一負載於該載體表面之塗層，包含鉑(Pt)與鈀(Pd)雙金屬奈米催化活性組分", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "促成微量殘氫低溫氧化。"},
-            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "該雙金屬催化劑之配比使尾氣中氫氣濃度於 40~90°C 排氣溫度下被抑制於 1.0 vol% 以下之非爆炸極限", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "NO (不符/差異點)", "差異/進步性說明": "【核心進步性防線】：傳統內燃機觸媒需 250°C 起燃；本案解決冷啟動低溫殘氫爆燃風險。"},
-            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "一疏水性抗水氣凝結微結構層，防止高濕度陰極尾氣水淹中毒", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "均等成立 (DOE)", "差異/進步性說明": "消除水淹現象，維持低溫催化持久性。"}
         ]
     elif any(k in low_t for k in ["剪枝", "果樹", "修剪"]):
         matched_ipc.extend(["A01G 3/08", "A01D 34/00"])
@@ -794,6 +733,9 @@ def execute_semantic_synthesis(title: str):
 
     clean_ipc = ", ".join(list(dict.fromkeys(matched_ipc)))
 
+    # 🔑 關鍵突破：強制遞增 version_id，徹底撕碎舊有元件快取！
+    st.session_state["v_id"] = st.session_state.get("v_id", 0) + 1
+
     st.session_state["patent_data"] = {
         "title": t,
         "ipc": clean_ipc,
@@ -819,8 +761,11 @@ st.set_page_config(
     layout="wide"
 )
 
+if "v_id" not in st.session_state:
+    st.session_state["v_id"] = 0
+
 if "patent_data" not in st.session_state:
-    execute_semantic_synthesis("溫室屋頂隔熱塗料")
+    execute_semantic_synthesis("氫燃料低壓儲存罐")
 
 if "last_fetched_patent" not in st.session_state:
     st.session_state["last_fetched_patent"] = None
@@ -831,9 +776,7 @@ if "last_oa_result" not in st.session_state:
 st.title("🛡️ 智慧財產權整合工作台 (離線旗艦版)")
 st.markdown("⚡ **100% 本地運行模式**：無須設定 API Key，整合 Google Patents 扁平化檢索式、專利號爬取、Claims 比對矩陣、TIPO 規範圖樣生成與法規答辯庫。")
 
-# ------------------------------------------------------------------------------
-# 側邊欄：操作手冊與營業秘密切結書
-# ------------------------------------------------------------------------------
+# 側邊欄
 st.sidebar.title("🛠️ 工作台輔助面板")
 
 with st.sidebar.expander("📖 操作手冊與使用說明", expanded=False):
@@ -869,17 +812,15 @@ tab_patent, tab_trademark, tab_laws = st.tabs([
     "⚖️ 智財法規速查 (專利法、商標法 ＆ 營業秘密法)"
 ])
 
-# ==============================================================================
 # TAB 1: 專利權模組
-# ==============================================================================
 with tab_patent:
     st.sidebar.markdown("---")
     st.sidebar.header("📁 快速切換熱門範本")
     
     col_sb1, col_sb2 = st.sidebar.columns(2)
     with col_sb1:
-        if st.button("☀️ 溫室隔熱塗料", use_container_width=True):
-            execute_semantic_synthesis("溫室屋頂隔熱塗料")
+        if st.button("🛢️️ 低壓儲氫罐", use_container_width=True):
+            execute_semantic_synthesis("氫燃料低壓儲存罐")
             st.rerun()
     with col_sb2:
         if st.button("⚡ 氫能觸媒轉換", use_container_width=True):
@@ -888,8 +829,8 @@ with tab_patent:
 
     col_sb3, col_sb4 = st.sidebar.columns(2)
     with col_sb3:
-        if st.button("✂️ 果樹剪枝機", use_container_width=True):
-            execute_semantic_synthesis("果樹自走式剪枝機")
+        if st.button("☀️ 溫室隔熱塗料", use_container_width=True):
+            execute_semantic_synthesis("溫室屋頂隔熱塗料")
             st.rerun()
     with col_sb4:
         if st.button("🌱 土壤熱水殺菌", use_container_width=True):
@@ -900,29 +841,30 @@ with tab_patent:
     st.sidebar.subheader("💡 任意主題自動產生器")
     st.sidebar.caption("輸入技術名稱（點擊按鈕或按 Enter 即時連動）：")
     
-    sidebar_query = st.sidebar.text_input("輸入名稱", placeholder="例如：溫室屋頂隔熱塗料", key="sidebar_theme_input_box")
+    sidebar_query = st.sidebar.text_input("輸入名稱", placeholder="例如：氫燃料低壓儲存罐", key="sb_query_box")
     if st.sidebar.button("🚀 即刻推導並連動", use_container_width=True):
         if sidebar_query.strip():
             execute_semantic_synthesis(sidebar_query.strip())
             st.rerun()
 
     cur_data = st.session_state["patent_data"]
+    vid = st.session_state["v_id"]
 
     st.subheader("1. 發明標的名稱與分類號設定 (支援自由編輯)")
     col_input1, col_input2, col_input3 = st.columns([2, 1, 1])
 
     with col_input1:
-        new_title = st.text_input("請輸入專利標的名稱（修改後按 Enter 即刻推導）：", value=cur_data["title"])
+        new_title = st.text_input("請輸入專利標的名稱（修改後按 Enter 即刻推導）：", value=cur_data["title"], key=f"title_in_{vid}")
         if new_title != cur_data["title"]:
             execute_semantic_synthesis(new_title)
             st.rerun()
 
     with col_input2:
-        ipc_input = st.text_input("IPC 分類號 (逗號隔開)", value=cur_data["ipc"])
+        ipc_input = st.text_input("IPC 分類號 (逗號隔開)", value=cur_data["ipc"], key=f"ipc_in_{vid}")
         cur_data["ipc"] = ipc_input
         
     with col_input3:
-        cpc_input = st.text_input("CPC 分類號 (逗號隔開)", value=cur_data["cpc"])
+        cpc_input = st.text_input("CPC 分類號 (逗號隔開)", value=cur_data["cpc"], key=f"cpc_in_{vid}")
         cur_data["cpc"] = cpc_input
 
     st.markdown("---")
@@ -931,23 +873,23 @@ with tab_patent:
     col_p1, col_p2, col_p3 = st.columns(3)
     with col_p1:
         st.markdown("#### 支柱 A：應用標的 (Target)")
-        p1_name = st.text_input("支柱 A 名稱", value=cur_data["p1_name"])
-        p1_en = st.text_area("英文關鍵字 (逗號隔開)", value=cur_data["p1_en"], height=90)
-        p1_zh = st.text_area("中文關鍵字 (逗號隔開)", value=cur_data["p1_zh"], height=90)
+        p1_name = st.text_input("支柱 A 名稱", value=cur_data["p1_name"], key=f"p1n_{vid}")
+        p1_en = st.text_area("英文關鍵字 (逗號隔開)", value=cur_data["p1_en"], height=90, key=f"p1e_{vid}")
+        p1_zh = st.text_area("中文關鍵字 (逗號隔開)", value=cur_data["p1_zh"], height=90, key=f"p1z_{vid}")
         cur_data["p1_name"], cur_data["p1_en"], cur_data["p1_zh"] = p1_name, p1_en, p1_zh
 
     with col_p2:
         st.markdown("#### 支柱 B：核心手段 (Mechanism)")
-        p2_name = st.text_input("支柱 B 名稱", value=cur_data["p2_name"])
-        p2_en = st.text_area("英文關鍵字 (逗號隔開)", value=cur_data["p2_en"], height=90)
-        p2_zh = st.text_area("中文關鍵字 (逗號隔開)", value=cur_data["p2_zh"], height=90)
+        p2_name = st.text_input("支柱 B 名稱", value=cur_data["p2_name"], key=f"p2n_{vid}")
+        p2_en = st.text_area("英文關鍵字 (逗號隔開)", value=cur_data["p2_en"], height=90, key=f"p2e_{vid}")
+        p2_zh = st.text_area("中文關鍵字 (逗號隔開)", value=cur_data["p2_zh"], height=90, key=f"p2z_{vid}")
         cur_data["p2_name"], cur_data["p2_en"], cur_data["p2_zh"] = p2_name, p2_en, p2_zh
 
     with col_p3:
         st.markdown("#### 支柱 C：技術功效 (Effect)")
-        p3_name = st.text_input("支柱 C 名稱", value=cur_data["p3_name"])
-        p3_en = st.text_area("英文關鍵字 (逗號隔開)", value=cur_data["p3_en"], height=90)
-        p3_zh = st.text_area("中文關鍵字 (逗號隔開)", value=cur_data["p3_zh"], height=90)
+        p3_name = st.text_input("支柱 C 名稱", value=cur_data["p3_name"], key=f"p3n_{vid}")
+        p3_en = st.text_area("英文關鍵字 (逗號隔開)", value=cur_data["p3_en"], height=90, key=f"p3e_{vid}")
+        p3_zh = st.text_area("中文關鍵字 (逗號隔開)", value=cur_data["p3_zh"], height=90, key=f"p3z_{vid}")
         cur_data["p3_name"], cur_data["p3_en"], cur_data["p3_zh"] = p3_name, p3_en, p3_zh
 
     st.markdown("---")
@@ -973,7 +915,6 @@ with tab_patent:
                 except Exception as e:
                     st.error(f"爬取失敗: {e}")
 
-    # ⚡ 動態專利號：一鍵自動填入比對矩陣按鈕
     cur_pno = target_pno.strip().upper() if target_pno.strip() else "US8608931B2"
     
     col_auto1, col_auto2 = st.columns([2, 2])
@@ -982,35 +923,35 @@ with tab_patent:
             st.session_state["patent_data"]["claims"] = [
                 {
                     "要件編號": "Element 1A",
-                    "本案 Claim 1 技術要件": f"一種用於{cur_data['title']}之基礎構件，包含成膜基質或支撐外殼",
-                    "前案 D1 對應技術": f"[{cur_pno}] 揭露傳統基礎成膜樹脂或外殼構架",
+                    "本案 Claim 1 技術要件": f"一種用於{cur_data['title']}之基礎構件，包含承壓外殼與進出氣接口",
+                    "前案 D1 對應技術": f"[{cur_pno}] 揭露傳統高壓金屬瓶體構架",
                     "前案 D2 對應技術": "",
                     "符合性判定": "YES (字面讀取)",
-                    "差異/進步性說明": "提供基本的物理承載或黏結介面。"
+                    "差異/進步性說明": "提供基本的容器承載介面。"
                 },
                 {
                     "要件編號": "Element 1B",
-                    "本案 Claim 1 技術要件": "一特定功能性奈米微球或催化組分，均勻分散於該基質中",
-                    "前案 D1 對應技術": f"[{cur_pno}] 揭露一般未經表面改質之傳統添加劑",
+                    "本案 Claim 1 技術要件": "一收容於內部之固態儲氫合金粉末材料",
+                    "前案 D1 對應技術": f"[{cur_pno}] 揭露傳統儲氫材料",
                     "前案 D2 對應技術": "",
                     "符合性判定": "YES (字面讀取)",
-                    "差異/進步性說明": "具備反射或催化之基礎活性功能。"
+                    "差異/進步性說明": "具備固態化學吸附儲氫功能。"
                 },
                 {
                     "要件編號": "Element 1C",
-                    "本案 Claim 1 技術要件": "特定的微觀調控臨界配比，於特定波段產生無法預期之選擇性穿透或低溫反應活性",
-                    "前案 D1 對應技術": f"[{cur_pno}] 未揭露臨界功能區間內之特定配比限制",
+                    "本案 Claim 1 技術要件": "內部高效換熱翅片與微熱管整合架構，工作壓力低於 5.0 MPa，吸放氫溫差小於 5°C",
+                    "前案 D1 對應技術": f"[{cur_pno}] 未揭露低壓低溫差之熱管理換熱模組",
                     "前案 D2 對應技術": "",
                     "符合性判定": "NO (不符/差異點)",
-                    "差異/進步性說明": "【核心進步性防線】：前案無技術啟示；本案產生了超越單純成分相加的突變性協同功效（Synergistic Effect）。"
+                    "差異/進步性說明": "【核心進步性防線】：本案在 5 MPa 絕對安全低壓下實現快速充放氫，解決合金導熱不良關鍵瓶頸。"
                 },
                 {
                     "要件編號": "Element 1D",
-                    "本案 Claim 1 技術要件": "一輔助耐久保護與抗外界環境侵蝕之穩定化助劑層",
-                    "前案 D1 對應技術": f"[{cur_pno}] 揭露公知之耐候添加劑",
+                    "本案 Claim 1 技術要件": "一緩衝微孔隔層，吸收吸放氫應力並防止合金粉末碎化板結",
+                    "前案 D1 對應技術": f"[{cur_pno}] 揭露一般過濾網",
                     "前案 D2 對應技術": "",
                     "符合性判定": "均等成立 (DOE)",
-                    "差異/進步性說明": "提供長效運作保護與抗中毒防沖刷功能。"
+                    "差異/進步性說明": "防止局部應力破壞並延長循環壽命。"
                 }
             ]
             st.session_state["last_oa_result"] = OA_ELECTROPLATING_DOC.replace("US8608931B2", cur_pno)
@@ -1052,7 +993,7 @@ with tab_patent:
             "符合性判定": st.column_config.SelectboxColumn("符合性判定", options=["YES (字面讀取)", "NO (不符/差異點)", "均等成立 (DOE)", "待確認"], width="small"),
             "差異/進步性說明": st.column_config.TextColumn("差異分析 / 進步性技術功效", width="large"),
         },
-        key="claim_editor_live"
+        key=f"claim_editor_{vid}"
     )
 
     col_claim_oa1, col_claim_oa2 = st.columns([2, 1])
@@ -1144,9 +1085,7 @@ with tab_patent:
                 use_container_width=True
             )
 
-# ==============================================================================
 # TAB 2: 商標權模組
-# ==============================================================================
 with tab_trademark:
     st.subheader("🏷️ TIPO 規範商標圖樣即時產生器 (8×8 cm @ 300 DPI)")
     st.markdown("由本地 Pillow 引擎即時合成純白底色高解析度 JPEG 圖樣，支援上傳 Logo、多行排版、對齊與行距調整，輸出完全符合智慧局 E-filing 上傳規範。")
@@ -1204,9 +1143,7 @@ with tab_trademark:
         else:
             st.warning("請先輸入商標文字以生成圖樣。")
 
-# ==============================================================================
-# TAB 3: 智財法規速查 (專利法、商標法、營業秘密法與化學配方專題)
-# ==============================================================================
+# TAB 3: 智財法規速查
 with tab_laws:
     st.subheader("⚖️ 智財法規速查指南 (含化學配方專利 ＆ 營業秘密法)")
 
@@ -1239,7 +1176,7 @@ with tab_laws:
             "營業秘密法": "🔒 營業秘密法",
             "商標法": "🏷️ 商標法"
         }
-        badge = badge_map.get(item["category"], "⚖️️ 智財法規")
+        badge = badge_map.get(item["category"], "⚖️ 智財法規")
         expander_title = f"{badge} ｜ {item['article']}：{item['title']}"
         with st.expander(expander_title, expanded=True if search_kw.strip() else False):
             st.markdown(f"**🔍 關鍵字標籤**：`{item['keywords']}`")
