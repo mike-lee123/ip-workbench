@@ -51,9 +51,24 @@ class PatentSearchBuilder:
         pillar_blocks = []
         for p in self.pillars:
             if p.en_keywords:
-                selected_kws = p.en_keywords[:3]
-                formatted = [f'"{kw}"' if " " in kw else kw for kw in selected_kws]
-                pillar_blocks.append(f"({' OR '.join(formatted)})")
+                formatted_kws = []
+                # 取前 3 個核心關鍵字，並過濾過長片語
+                for kw in p.en_keywords[:3]:
+                    clean_kw = re.sub(r'[\";*]', '', kw).strip()
+                    if not clean_kw:
+                        continue
+                    tokens = clean_kw.split()
+                    if len(tokens) == 1:
+                        formatted_kws.append(clean_kw)
+                    elif len(tokens) == 2:
+                        # 雙詞片語加引號提升準確率
+                        formatted_kws.append(f'"{clean_kw}"')
+                    else:
+                        # 超過 3 詞之長片語容易造成 0 結果，取其核心後兩詞
+                        formatted_kws.append(f'"{tokens[-2]} {tokens[-1]}"')
+                
+                if formatted_kws:
+                    pillar_blocks.append(f"({' OR '.join(formatted_kws)})")
 
         keyword_part = " AND ".join(pillar_blocks) if pillar_blocks else ""
 
@@ -61,37 +76,47 @@ class PatentSearchBuilder:
         if all_classes:
             clean_classes = []
             for c in all_classes:
-                raw_c = re.sub(r'\s+', '', c).strip().upper()
+                # 嚴格濾除分號、星號、空白
+                raw_c = re.sub(r'[\s;*]', '', c).strip().upper()
                 if raw_c:
                     clean_classes.append(raw_c)
             
             if clean_classes:
                 classes_str = f"({' OR '.join(clean_classes)})"
                 if keyword_part:
-                    return f"{keyword_part} AND {classes_str}"
-                return classes_str
+                    final_q = f"{keyword_part} AND {classes_str}"
+                else:
+                    final_q = classes_str
+            else:
+                final_q = keyword_part
+        else:
+            final_q = keyword_part
 
-        return keyword_part
+        # 最終確保去除字尾任何分號或多餘空格
+        return final_q.rstrip("; ").strip()
 
     def to_gpss_query(self, search_fields: str = "TI,AB,CL") -> str:
         pillar_blocks = []
         for p in self.pillars:
             all_kw = p.zh_keywords + p.en_keywords
             if all_kw:
-                formatted = [f'"{kw}"' if " " in kw else kw for kw in all_kw]
-                pillar_blocks.append(f"({' OR '.join(formatted)})")
+                formatted = [f'"{re.sub(r"[\";*]", "", kw).strip()}"' for kw in all_kw[:4] if kw.strip()]
+                if formatted:
+                    pillar_blocks.append(f"({' OR '.join(formatted)})")
 
         query_body = " AND ".join(pillar_blocks) if pillar_blocks else ""
         formatted_query = f"{search_fields}=({query_body})" if query_body else ""
 
         if self.ipc_classes:
-            ipc_block = " OR ".join([f'"{code}"*' for code in self.ipc_classes])
-            if formatted_query:
-                formatted_query += f" AND IC=({ipc_block})"
-            else:
-                formatted_query = f"IC=({ipc_block})"
+            clean_ipcs = [re.sub(r'[\s;*]', '', c).strip().upper() for c in self.ipc_classes if c.strip()]
+            if clean_ipcs:
+                ipc_block = " OR ".join([f'"{code}"*' for code in clean_ipcs])
+                if formatted_query:
+                    formatted_query += f" AND IC=({ipc_block})"
+                else:
+                    formatted_query = f"IC=({ipc_block})"
 
-        return formatted_query
+        return formatted_query.rstrip("; ").strip()
 
     def generate_report_text(self, claim_chart_df: pd.DataFrame = None, prior_art_data: dict = None) -> str:
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -495,7 +520,7 @@ USER_MANUAL_MARKDOWN = """# 📖 智慧財產權整合工作台 操作手冊（�
 ---
 
 ## 模組一：📄 專利檢索與 Claims 比對矩陣
-1. **即時自動推導**：在側邊欄或主畫面輸入任何技術名稱（如「氫燃料汽車觸媒轉換器」），按 Enter 系統立即自動重繪帶入對應 IPC、三支柱與 Claims！
+1. **即時自動推導**：在側邊欄或主畫面輸入任何技術名稱，按 Enter 系統立即自動重繪帶入對應 IPC、三支柱與 Claims！
 2. **前案爬取**：輸入專利號（如 `US8608931B2`、`CN110016700A`），系統直連 Google Patents 以 UTF-8 精確擷取摘要與 Claims 原文。
 3. **全要件原則比對**：點擊「⚡ 一鍵自動帶入比對矩陣」即可秒速填滿 Element 1A~1D，按鈕專利號將動態連動上方輸入框！
 4. **扁平化檢索式**：點擊按鈕自動產出符合 Google Patents 與台灣 GPSS 官方規範之無分號、無多餘巢狀括號檢索式。
@@ -509,7 +534,7 @@ USER_MANUAL_MARKDOWN = """# 📖 智慧財產權整合工作台 操作手冊（�
 
 ---
 
-## 模組三：⚖️️ 智財法規速查 ＆ 申復答辯理由書產生器
+## 模組三：⚖️ 智財法規速查 ＆ 申復答辯理由書產生器
 1. **法規速查**：依類別過濾專利法、商標法、營業秘密法與化學配方審查專題。
 2. **答辯理由生成**：內建包含「化學配方第22條協同增效」、「商品非類似抗辯」等標準代理人格式申復書，支援線上修改與下載。
 """
@@ -612,51 +637,51 @@ def execute_semantic_synthesis(title: str):
     matched_p3_en, matched_p3_zh = [], []
 
     # 1. 標的領域推理 (Target)
-    if any(k in low_t for k in ["氫", "燃料電池", "觸媒", "轉換器", "消氫"]):
-        matched_ipc.extend(["B01D 53/94", "B01J 23/42", "F01N 3/10", "H01M 8/04"])
-        p1_name = "Target: 氫燃料電池汽車與排氣尾氣淨化系統"
-        matched_p1_en = ["hydrogen fuel cell vehicle", "FCV", "exhaust aftertreatment", "tailpipe emission", "fuel cell cathode exhaust"]
-        matched_p1_zh = ["氫燃料電池汽車", "氫能車", "排氣後處理", "尾氣淨化", "陰極排氣", "質子交換膜"]
-        p2_name = "Mechanism: 鉑鈀貴金屬低溫催化塗層與蜂窩陶瓷載體"
-        matched_p2_en = ["catalytic converter", "Pt-Pd bimetallic catalyst", "cordierite honeycomb substrate", "washcoat", "hydrogen oxidation"]
-        matched_p2_zh = ["觸媒轉換器", "鉑鈀雙金屬催化劑", "堇青石蜂窩載體", "高比表面積塗層", "未燃氫氣消解", "低溫消氫"]
-        p3_name = "Effect: 超低溫消氫防爆燃與極致零排放"
-        matched_p3_en = ["hydrogen leakage mitigation", "explosion suppression", "low-temperature light-off", "water vapor management", "zero harmful emission"]
-        matched_p3_zh = ["未反應殘氫消除", "防爆燃安全", "低起燃溫度", "排氣水氣管理", "耐熱衝擊", "零有害排放"]
-        claim_elements = [
-            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種用於{t}之催化淨化裝置，包含耐腐蝕外殼及配置於其中之蜂窩陶瓷或金屬載體", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "提供排氣流道支撐結構。"},
-            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一負載於該載體表面之高分散微孔塗層，包含鉑(Pt)與鈀(Pd)雙金屬奈米催化活性組分", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "促成微量未反應殘氫於常溫至低溫條件下之催化氧化反應。"},
-            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "該雙金屬催化劑之重量比經特定調配，使尾氣中氫氣體積濃度於 40~90°C 排氣溫度下被強制催化稀釋至 1.0 vol% 以下之非爆炸極限臨界值", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "NO (不符/差異點)", "差異/進步性說明": "【核心進步性防線】：傳統內燃機觸媒需 250°C 以上起燃；本案特定低溫配比解決燃料電池冷啟動與低溫排氣下殘氫蓄積之燃爆風險。"},
-            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "一疏水性抗水氣凝結微結構層，防止高濕度陰極尾氣在催化劑表面形成液態水膜致使催化活性位點中毒", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "均等成立 (DOE)", "差異/進步性說明": "消除水淹現象，維持低溫催化持久性。"}
-        ]
-    elif any(k in low_t for k in ["隔熱", "塗料", "漆", "屋頂", "降溫"]):
-        matched_ipc.extend(["C09D 5/33", "C09D 7/61", "A01G 9/24", "E04D 13/00"])
-        p1_name = "Target: 溫室採光屋頂與農業設施覆蓋材"
-        matched_p1_en = ["greenhouse roof", "translucent roof sheet", "agricultural film", "polycarbonate panel"]
-        matched_p1_zh = ["溫室屋頂", "採光屋頂板", "農業覆蓋膜", "透光PC耐力板", "設施棚架"]
-        p2_name = "Mechanism: 近紅外反射奈米功能填料與耐候聚合物基質"
-        matched_p2_en = ["near-infrared reflective pigment", "hollow ceramic microspheres", "waterborne acrylic resin", "phase change material"]
-        matched_p2_zh = ["近紅外反射顏料", "中空微珠填料", "水性耐候樹脂", "奈米二氧化鈦", "可逆溫控相變材料"]
+    if any(k in low_t for k in ["隔熱", "塗料", "漆", "屋頂", "降溫", "反射塗層"]):
+        matched_ipc.extend(["C09D 5/33", "C09D 7/61", "A01G 9/24"])
+        p1_name = "Target: 溫室採光屋頂與透光覆蓋材"
+        matched_p1_en = ["greenhouse roof", "agricultural film", "polycarbonate panel"]
+        matched_p1_zh = ["溫室屋頂", "透光覆蓋膜", "採光耐力板", "設施棚架"]
+        p2_name = "Mechanism: 近紅外反射填料與水性耐候樹脂基質"
+        matched_p2_en = ["near-infrared", "hollow ceramic", "waterborne acrylic"]
+        matched_p2_zh = ["近紅外反射顏料", "中空微珠", "水性耐候樹脂", "抗紫外線添加劑"]
         p3_name = "Effect: 高紅外熱反射與可見光透射光熱平衡"
-        matched_p3_en = ["high solar reflectance", "visible light transmittance", "greenhouse cooling effect", "weatherability and wash-off resistance"]
-        matched_p3_zh = ["高紅外熱反射率", "高可見光透過率", "棚內顯著降溫5~10度", "耐雨水沖刷耐候性", "維持光合作用"]
+        matched_p3_en = ["solar reflectance", "cooling", "transmittance"]
+        matched_p3_zh = ["高熱反射率", "保持植物透光", "棚內降溫5-10度", "耐雨水沖刷"]
         claim_elements = [
-            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種{t}組成物，包含 30~65 重量份之水性耐候成膜樹脂基質", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "提供塗層附著基礎。"},
-            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "包含 5~25 重量份之近紅外光反射奈米粒子", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "反射太陽熱輻射。"},
-            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "固化後於 PAR 植物光合作用波段穿透率大於 65%，近紅外反射率大於 80%", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "NO (不符/差異點)", "差異/進步性說明": "【核心進步性防線】：選擇性光熱分離。"},
-            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "包含 1~10 重量份之中空隔熱微珠與抗UV穩定劑", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "均等成立 (DOE)", "差異/進步性說明": "降低導熱並提升戶外耐候。"}
+            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種用於{t}之塗覆組成物，包含水性成膜聚合物基質", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "提供屋頂基本附著力。"},
+            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "包含近紅外反射粒子與中空微珠之隔熱填料", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "提供日照熱能反射功效。"},
+            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "特定固化配比，於植物光合有效輻射(PAR)波段維持高透射，且近紅外反射率大於 80%", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "NO (不符/差異點)", "差異/進步性說明": "【核心進步性防線】：前案阻熱時劣化作物受光，本案特定折射率平衡實現『高透光且高隔熱』之光熱分離。"},
+            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "耐雨水沖刷與抗紫外線光穩定構件", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "均等成立 (DOE)", "差異/進步性說明": "延長戶外耐候壽命。"}
+        ]
+    elif any(k in low_t for k in ["氫", "燃料電池", "觸媒", "轉換器", "消氫"]):
+        matched_ipc.extend(["B01D 53/94", "B01J 23/42", "H01M 8/04"])
+        p1_name = "Target: 氫燃料電池汽車與排氣尾氣淨化系統"
+        matched_p1_en = ["hydrogen fuel cell", "exhaust aftertreatment", "tailpipe emission"]
+        matched_p1_zh = ["氫燃料電池汽車", "排氣後處理", "尾氣淨化", "陰極排氣"]
+        p2_name = "Mechanism: 鉑鈀貴金屬低溫催化塗層與蜂窩載體"
+        matched_p2_en = ["catalytic converter", "bimetallic catalyst", "honeycomb substrate"]
+        matched_p2_zh = ["觸媒轉換器", "鉑鈀催化劑", "蜂窩載體", "低溫消氫塗層"]
+        p3_name = "Effect: 超低溫消氫防爆燃與極致零排放"
+        matched_p3_en = ["hydrogen mitigation", "explosion suppression", "low-temperature light-off"]
+        matched_p3_zh = ["未反應殘氫消除", "防爆燃安全", "低起燃溫度", "耐水氣中毒"]
+        claim_elements = [
+            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種用於{t}之催化淨化裝置，包含外殼及配置於其中之蜂窩載體", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "提供排氣流道支撐結構。"},
+            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一負載於該載體表面之塗層，包含鉑(Pt)與鈀(Pd)雙金屬奈米催化活性組分", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "促成微量殘氫低溫氧化。"},
+            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "該雙金屬催化劑之配比使尾氣中氫氣濃度於 40~90°C 排氣溫度下被抑制於 1.0 vol% 以下之非爆炸極限", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "NO (不符/差異點)", "差異/進步性說明": "【核心進步性防線】：傳統內燃機觸媒需 250°C 起燃；本案解決冷啟動低溫殘氫爆燃風險。"},
+            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "一疏水性抗水氣凝結微結構層，防止高濕度陰極尾氣水淹中毒", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "均等成立 (DOE)", "差異/進步性說明": "消除水淹現象，維持低溫催化持久性。"}
         ]
     elif any(k in low_t for k in ["剪枝", "果樹", "修剪"]):
         matched_ipc.extend(["A01G 3/08", "A01D 34/00"])
         p1_name = "Target: 果樹果園與樹冠枝條"
-        matched_p1_en = ["orchard tree", "fruit tree", "canopy branch", "agricultural pruning"]
-        matched_p1_zh = ["果樹", "果園", "樹冠枝條", "果木修剪", "高空枝枒"]
+        matched_p1_en = ["orchard tree", "canopy branch", "agricultural pruning"]
+        matched_p1_zh = ["果樹", "果園", "樹冠枝條", "果木修剪"]
         p2_name = "Mechanism: 自走式履帶底盤與多關節旋轉修剪刀盤"
-        matched_p2_en = ["self-propelled crawler", "articulated robotic arm", "rotary cutter disk", "hydraulic shears"]
-        matched_p2_zh = ["自走式履帶底盤", "多關節機械臂", "旋轉式修剪刀盤", "液壓剪切機構", "姿態感測器"]
+        matched_p2_en = ["self-propelled crawler", "robotic arm", "rotary cutter"]
+        matched_p2_zh = ["自走式底盤", "多關節機械臂", "旋轉式刀盤", "液壓剪切"]
         p3_name = "Effect: 樹冠仿形避障與切口平整防裂"
-        matched_p3_en = ["canopy contouring", "obstacle avoidance", "smooth cut surface", "bark tearing reduction"]
-        matched_p3_zh = ["樹冠自動仿形", "即時避障", "切口平整", "防止撕裂樹皮", "提高作業安全性"]
+        matched_p3_en = ["contouring", "obstacle avoidance", "smooth cut"]
+        matched_p3_zh = ["樹冠自動仿形", "即時避障", "切口平整", "防撕裂樹皮"]
         claim_elements = [
             {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種{t}，包含自走式驅動底盤之機架總成", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": "提供果園崎嶇地形行走。"},
             {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一可升降調節之多關節修剪臂與旋轉刀具模組", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": "達成多角度剪切。"},
@@ -666,14 +691,14 @@ def execute_semantic_synthesis(title: str):
     elif any(k in low_t for k in ["土壤", "殺菌", "熱水器", "並聯"]):
         matched_ipc.extend(["A01M 17/00", "A01B 77/00", "F24H 1/00"])
         p1_name = "Target: 農業土壤與耕作層"
-        matched_p1_en = ["soil disinfection", "soil sterilization", "agricultural soil", "pathogen eradication"]
-        matched_p1_zh = ["土壤消毒", "土壤殺菌", "農業土壤", "病原線蟲防治", "土傳病害"]
+        matched_p1_en = ["soil disinfection", "soil sterilization", "agricultural soil"]
+        matched_p1_zh = ["土壤消毒", "土壤殺菌", "農業土壤", "病原線蟲防治"]
         p2_name = "Mechanism: 並聯燃氣加熱與大流量歧管"
-        matched_p2_en = ["parallel gas water heaters", "manifold injection", "continuous heating", "temperature regulation"]
-        matched_p2_zh = ["並聯瓦斯熱水器", "分流匯流管路", "大流量連續供熱", "比例恆溫調控"]
+        matched_p2_en = ["parallel water heaters", "manifold injection", "continuous heating"]
+        matched_p2_zh = ["並聯瓦斯熱水器", "分流匯流管路", "大流量連續供熱"]
         p3_name = "Effect: 深層恆溫滲透與無藥劑滅菌"
-        matched_p3_en = ["deep heat penetration", "uniform pasteurization", "thermal lethality"]
-        matched_p3_zh = ["深層熱穿透", "均勻浸潤", "高溫物理致死", "無農藥殘留"]
+        matched_p3_en = ["deep heat penetration", "pasteurization", "thermal lethality"]
+        matched_p3_zh = ["深層熱穿透", "均勻浸潤", "高溫物理致死"]
         claim_elements = [
             {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種{t}系統，包含機架及供水加壓泵", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": "基礎流體輸送構架。"},
             {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "複數瓦斯熱水器並聯配置並連接至高溫匯流管", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": "模組化大流量供熱。"},
@@ -686,7 +711,7 @@ def execute_semantic_synthesis(title: str):
         matched_p1_en = ["operation unit", "mechanical assembly", "target carrier"]
         matched_p1_zh = ["作業單元", "機構本體", "目標載體"]
         p2_name = "Mechanism: 核心功能模組與控制架構"
-        matched_p2_en = ["core functional module", "control architecture", "actuator system"]
+        matched_p2_en = ["functional module", "control architecture", "actuator system"]
         matched_p2_zh = ["核心功能模組", "控制架構", "致動系統"]
         p3_name = "Effect: 系統運作效能與穩定度提升"
         matched_p3_en = ["operational efficiency", "system stability", "precision enhancement"]
@@ -700,7 +725,7 @@ def execute_semantic_synthesis(title: str):
 
     clean_ipc = ", ".join(list(dict.fromkeys(matched_ipc)))
 
-    # 一律直接寫入 session_state 主字典
+    # 一律寫入 session_state 主字典
     st.session_state["patent_data"] = {
         "title": t,
         "ipc": clean_ipc,
@@ -726,9 +751,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# 初次載入預設
+# 初次載入預設為「溫室屋頂隔熱塗料」
 if "patent_data" not in st.session_state:
-    execute_semantic_synthesis("氫燃料汽車觸媒轉換器")
+    execute_semantic_synthesis("溫室屋頂隔熱塗料")
 
 if "last_fetched_patent" not in st.session_state:
     st.session_state["last_fetched_patent"] = None
@@ -786,12 +811,12 @@ with tab_patent:
     
     col_sb1, col_sb2 = st.sidebar.columns(2)
     with col_sb1:
-        if st.button("⚡ 氫能觸媒轉換", use_container_width=True):
-            execute_semantic_synthesis("氫燃料汽車觸媒轉換器")
-            st.rerun()
-    with col_sb2:
         if st.button("☀️ 溫室隔熱塗料", use_container_width=True):
             execute_semantic_synthesis("溫室屋頂隔熱塗料")
+            st.rerun()
+    with col_sb2:
+        if st.button("⚡ 氫能觸媒轉換", use_container_width=True):
+            execute_semantic_synthesis("氫燃料汽車觸媒轉換器")
             st.rerun()
 
     col_sb3, col_sb4 = st.sidebar.columns(2)
@@ -808,7 +833,7 @@ with tab_patent:
     st.sidebar.subheader("💡 任意主題自動產生器")
     st.sidebar.caption("輸入技術名稱（點擊按鈕或按 Enter 即時連動）：")
     
-    sidebar_query = st.sidebar.text_input("輸入名稱", placeholder="例如：氫燃料汽車觸媒轉換器", key="sidebar_theme_input_box")
+    sidebar_query = st.sidebar.text_input("輸入名稱", placeholder="例如：溫室屋頂隔熱塗料", key="sidebar_theme_input_box")
     if st.sidebar.button("🚀 即刻推導並連動", use_container_width=True):
         if sidebar_query.strip():
             execute_semantic_synthesis(sidebar_query.strip())
@@ -821,7 +846,7 @@ with tab_patent:
     col_input1, col_input2, col_input3 = st.columns([2, 1, 1])
 
     with col_input1:
-        new_title = st.text_input("請輸入專利標的名稱：", value=cur_data["title"])
+        new_title = st.text_input("請輸入專利標的名稱（修改後按 Enter 即刻推導）：", value=cur_data["title"])
         if new_title != cur_data["title"]:
             execute_semantic_synthesis(new_title)
             st.rerun()
@@ -891,35 +916,35 @@ with tab_patent:
             st.session_state["patent_data"]["claims"] = [
                 {
                     "要件編號": "Element 1A",
-                    "本案 Claim 1 技術要件": f"一種用於{cur_data['title']}之催化淨化裝置，包含耐腐蝕外殼及配置於其中之蜂窩載體",
-                    "前案 D1 對應技術": f"[{cur_pno}] 揭露傳統外殼與通用蜂窩載體構架",
+                    "本案 Claim 1 技術要件": f"一種用於{cur_data['title']}之基礎構件，包含成膜基質或支撐外殼",
+                    "前案 D1 對應技術": f"[{cur_pno}] 揭露傳統基礎成膜樹脂或外殼構架",
                     "前案 D2 對應技術": "",
                     "符合性判定": "YES (字面讀取)",
-                    "差異/進步性說明": "提供排氣流動之基礎支撐。"
+                    "差異/進步性說明": "提供基本的物理承載或黏結介面。"
                 },
                 {
                     "要件編號": "Element 1B",
-                    "本案 Claim 1 技術要件": "一負載於該載體表面之塗層，包含鉑(Pt)與鈀(Pd)奈米活性組分",
-                    "前案 D1 對應技術": f"[{cur_pno}] 揭露傳統三元催化之貴金屬塗層",
+                    "本案 Claim 1 技術要件": "一特定功能性奈米微球或催化組分，均勻分散於該基質中",
+                    "前案 D1 對應技術": f"[{cur_pno}] 揭露一般未經表面改質之傳統添加劑",
                     "前案 D2 對應技術": "",
                     "符合性判定": "YES (字面讀取)",
-                    "差異/進步性說明": "具備催化活性。"
+                    "差異/進步性說明": "具備反射或催化之基礎活性功能。"
                 },
                 {
                     "要件編號": "Element 1C",
-                    "本案 Claim 1 技術要件": "特定超低溫消氫配比，於 40~90°C 排氣溫度下將氫氣濃度抑制於 1.0 vol% 以下",
-                    "前案 D1 對應技術": f"[{cur_pno}] 未揭露低於 100°C 之低溫起燃消氫配方",
+                    "本案 Claim 1 技術要件": "特定的微觀調控臨界配比，於特定波段產生無法預期之選擇性穿透或低溫反應活性",
+                    "前案 D1 對應技術": f"[{cur_pno}] 未揭露臨界功能區間內之特定配比限制",
                     "前案 D2 對應技術": "",
                     "符合性判定": "NO (不符/差異點)",
-                    "差異/進步性說明": "【核心進步性防線】：避免未燃氫氣在排氣管路發生爆燃風險。"
+                    "差異/進步性說明": "【核心進步性防線】：前案無技術啟示；本案產生了超越單純成分相加的突變性協同功效（Synergistic Effect）。"
                 },
                 {
                     "要件編號": "Element 1D",
-                    "本案 Claim 1 技術要件": "一抗水凝結微孔塗層，防止陰極尾氣水淹中毒",
-                    "前案 D1 對應技術": f"[{cur_pno}] 揭露親水性氧化鋁塗層",
+                    "本案 Claim 1 技術要件": "一輔助耐久保護與抗外界環境侵蝕之穩定化助劑層",
+                    "前案 D1 對應技術": f"[{cur_pno}] 揭露公知之耐候添加劑",
                     "前案 D2 對應技術": "",
-                    "符合性判定": "NO (不符/差異點)",
-                    "差異/進步性說明": "確保高濕度環境下催化活性持久。"
+                    "符合性判定": "均等成立 (DOE)",
+                    "差異/進步性說明": "提供長效運作保護與抗中毒防沖刷功能。"
                 }
             ]
             st.session_state["last_oa_result"] = OA_ELECTROPLATING_DOC.replace("US8608931B2", cur_pno)
