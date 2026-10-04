@@ -210,7 +210,7 @@ def fetch_patent_data_from_google(patent_no: str) -> dict:
     }
 
 # ==============================================================================
-# 三、 商標圖樣繪製核心邏輯 (支援 Streamlit Cloud 開源字型下載)
+# 三、 商標圖樣繪製核心邏輯 (支援 Streamlit Cloud 自動載入開源中文字型)
 # ==============================================================================
 def get_custom_font(font_size: int):
     candidate_fonts = [
@@ -495,7 +495,7 @@ USER_MANUAL_MARKDOWN = """# 📖 智慧財產權整合工作台 操作手冊（�
 ---
 
 ## 模組一：📄 專利檢索與 Claims 比對矩陣
-1. **技術三支柱展開**：可直接於各欄位自訂輸入關鍵字，亦可在側邊欄文字框輸入建議詞（如「瓦斯自行車」、「電鍍」）一鍵載入。
+1. **技術主題切換**：在側邊欄直接點擊「🚲 瓦斯自行車」、「🧪 電鍍光澤劑」或「🌿 溫室病害偵測」，主畫面欄位與比對矩陣立刻秒速切換！
 2. **前案爬取**：輸入專利號（如 `US8608931B2`、`CN110016700A`），系統直連 Google Patents 以 UTF-8 精確擷取摘要與 Claims 原文。
 3. **全要件原則比對**：點擊「⚡ 一鍵自動帶入比對矩陣」即可秒速填滿 Element 1A~1D，按鈕專利號將動態連動上方輸入框！
 4. **扁平化檢索式**：點擊按鈕自動產出符合 Google Patents 與台灣 GPSS 官方規範之無分號、無多餘巢狀括號檢索式。
@@ -599,7 +599,108 @@ OA_ELECTROPLATING_DOC = """專利申復理由書（草稿）
 """
 
 # ==============================================================================
-# 六、 Streamlit 介面與狀態管理 (純本地離線架構)
+# 六、 技術範本資料集 (集中定義，一鍵載入函式)
+# ==============================================================================
+def load_template_data(template_type: str, custom_name: str = ""):
+    """直接將特定範本或自訂主題寫入 session_state"""
+    if template_type == "bike":
+        st.session_state["patent_title_input"] = "瓦斯動力輔助自行車之氣體燃料供氣與引擎驅動系統"
+        st.session_state["ipc_input_val"] = "B62M 6/00, B62K 11/00, F02M 21/02"
+        st.session_state["cpc_input_val"] = "B62M 6/00, F02M 21/02"
+        st.session_state["p1_n_val"] = "Target: 自行車與輕型二輪載具"
+        st.session_state["p1_e_val"] = "bicycle, bike, two-wheeled vehicle, moped"
+        st.session_state["p1_z_val"] = "自行車, 腳踏車, 二輪車, 輕型機車"
+        st.session_state["p2_n_val"] = "Mechanism: 瓦斯鋼瓶與燃料供氣管路"
+        st.session_state["p2_e_val"] = "LPG, propane, liquefied petroleum gas, natural gas, gaseous fuel"
+        st.session_state["p2_z_val"] = "瓦斯, 液化石油氣, 丙烷, 天然氣, 氣體燃料, 鋼瓶"
+        st.session_state["p3_n_val"] = "Effect: 減壓調節與引擎動力輸出"
+        st.session_state["p3_e_val"] = "engine, motor, pressure regulator, carburetor, auxiliary power"
+        st.session_state["p3_z_val"] = "引擎, 發動機, 減壓閥, 化油器, 動力輔助, 燃油供給"
+        st.session_state["claims_data"] = [
+            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": "一種瓦斯自行車架構，包含自行車車架及輔助內燃發動機", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
+            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一可拆卸式高壓氣態燃料儲存鋼瓶，固定於車架下管或後貨架", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
+            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "一兩級減壓閥與氣化裝置，調控瓦斯氣體恆壓輸送至化油器", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
+            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "一離合器傳動輪，將發動機輸出扭矩傳送至後輪軸帶動車輛行進", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""}
+        ]
+
+    elif template_type == "electroplating":
+        st.session_state["patent_title_input"] = "用於貴金屬電鍍之晶粒細化光澤添加劑組成物"
+        st.session_state["ipc_input_val"] = "C25D 3/46, C25D 3/48, C25D 3/62, C25D 3/64"
+        st.session_state["cpc_input_val"] = "C25D 3/46, C25D 3/48, C25D 3/64"
+        st.session_state["p1_n_val"] = "Target: 貴金屬電鍍浴與接觸件"
+        st.session_state["p1_e_val"] = "electroplating bath, gold electroplating, silver plating, contact terminal"
+        st.session_state["p1_z_val"] = "電鍍浴, 鍍金, 鍍銀, 接觸端子, 引線框架, 貴金屬沉積"
+        st.session_state["p2_n_val"] = "Mechanism: 雜環季銨鹽與含硫細化劑協同"
+        st.session_state["p2_e_val"] = "grain refiner, brightener, quaternary ammonium, heterocyclic compound"
+        st.session_state["p2_z_val"] = "晶粒細化劑, 光澤劑, 聚季銨鹽, 芳香雜環, 硫丙基二硫化物, 陰極極化"
+        st.session_state["p3_n_val"] = "Effect: 奈米微晶緻密與耐磨抗氧化"
+        st.session_state["p3_e_val"] = "nanocrystalline, dendritic suppression, low contact resistance, wear resistance"
+        st.session_state["p3_z_val"] = "奈米晶粒, 抑制枝晶, 低接觸阻抗, 耐磨耗, 打線結合力, 鏡面光澤"
+        st.session_state["claims_data"] = [
+            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": "一貴金屬電鍍添加劑，包含 0.1~10 重量份之主光澤劑，其具含氮芳香雜環或聚季銨鹽陽離子結構", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
+            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "包含 0.05~5 重量份之輔助細化劑，選自含硫或磺酸基有機抑制劑", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
+            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "該主光澤劑與輔助細化劑之重量比限定為 1:1 至 10:1，具特定吸附平衡比例", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
+            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "包含 0.5~8 重量份之極化調節界面活性劑與溶劑載體", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""}
+        ]
+        st.session_state["last_oa_result"] = OA_ELECTROPLATING_DOC
+
+    elif template_type == "greenhouse":
+        st.session_state["patent_title_input"] = "多光譜溫室作物病害早期偵測系統"
+        st.session_state["ipc_input_val"] = "A01G 9/24, G01N 21/84, G06V 20/10, G06T 7/00"
+        st.session_state["cpc_input_val"] = "A01G 9/24, G01N 2021/8466, G06V 20/188"
+        st.session_state["p1_n_val"] = "Target: 溫室作物與植物病害"
+        st.session_state["p1_e_val"] = "greenhouse crop, plant disease, foliage pathogen, tomato crop"
+        st.session_state["p1_z_val"] = "溫室作物, 植物病害, 葉片病原, 作物健康, 番茄病害"
+        st.session_state["p2_n_val"] = "Mechanism: 多光譜感測與邊緣影像推論"
+        st.session_state["p2_e_val"] = "multispectral imaging, hyperspectral sensor, narrowband reflectance, edge computing"
+        st.session_state["p2_z_val"] = "多光譜影像, 高光譜感測, 窄波段反射率, 邊緣運算, 深度學習推論"
+        st.session_state["p3_n_val"] = "Effect: 潛伏早期偵測與即時警報"
+        st.session_state["p3_e_val"] = "early lesion detection, asymptomatic stage, pre-symptomatic diagnosis, real-time alert"
+        st.session_state["p3_z_val"] = "早期病斑偵測, 潛伏期診斷, 症狀前檢測, 即時告警, 降低誤判"
+        st.session_state["claims_data"] = [
+            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": "一多光譜感測模組，配置於移動軌道，具有特定吸收峰窄波段濾波感測器", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
+            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一邊緣推論處理器，對多光譜影像執行植被指數（NDVI/PRI）正規化降維校正", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
+            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "一病斑早期預警神經網路模型，根據特徵化多光譜資訊預測前症狀潛伏病灶", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
+            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "一環控連動介面，當接收預警訊號時觸發特定分區通風調節與精準噴灑", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""}
+        ]
+
+    elif template_type == "reset":
+        st.session_state["patent_title_input"] = ""
+        st.session_state["ipc_input_val"] = ""
+        st.session_state["cpc_input_val"] = ""
+        st.session_state["p1_n_val"] = ""
+        st.session_state["p1_e_val"] = ""
+        st.session_state["p1_z_val"] = ""
+        st.session_state["p2_n_val"] = ""
+        st.session_state["p2_e_val"] = ""
+        st.session_state["p2_z_val"] = ""
+        st.session_state["p3_n_val"] = ""
+        st.session_state["p3_e_val"] = ""
+        st.session_state["p3_z_val"] = ""
+        st.session_state["claims_data"] = [
+            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": "", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""}
+        ]
+
+    elif template_type == "custom":
+        title = custom_name.strip() if custom_name.strip() else "自訂發明專利標的"
+        st.session_state["patent_title_input"] = title
+        st.session_state["ipc_input_val"] = ""
+        st.session_state["cpc_input_val"] = ""
+        st.session_state["p1_n_val"] = f"Target: {title} 載體"
+        st.session_state["p1_e_val"] = ""
+        st.session_state["p1_z_val"] = ""
+        st.session_state["p2_n_val"] = "Mechanism: 核心控制手段與硬體結構"
+        st.session_state["p2_e_val"] = ""
+        st.session_state["p2_z_val"] = ""
+        st.session_state["p3_n_val"] = "Effect: 技術功效與突變增益"
+        st.session_state["p3_e_val"] = ""
+        st.session_state["p3_z_val"] = ""
+        st.session_state["claims_data"] = [
+            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種{title}，包含基礎承載機構", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""}
+        ]
+
+# ==============================================================================
+# 七、 Streamlit 介面與狀態管理 (純本地離線架構)
 # ==============================================================================
 st.set_page_config(
     page_title="智慧財產權整合工作台 (離線旗艦版)",
@@ -607,34 +708,19 @@ st.set_page_config(
     layout="wide"
 )
 
+# 初始化預設為瓦斯自行車
+if "patent_title_input" not in st.session_state:
+    load_template_data("bike")
+
 init_defaults = {
-    "patent_title_input": "瓦斯動力輔助自行車之氣體燃料供氣與引擎驅動系統",
-    "ipc_input_val": "B62M 6/00, B62K 11/00, F02M 21/02",
-    "cpc_input_val": "B62M 6/00, F02M 21/02",
-    "p1_n_val": "Target: 自行車與輕型二輪載具",
-    "p1_e_val": "bicycle, bike, two-wheeled vehicle, moped",
-    "p1_z_val": "自行車, 腳踏車, 二輪車, 輕型機車",
-    "p2_n_val": "Mechanism: 瓦斯鋼瓶與燃料供氣管路",
-    "p2_e_val": "LPG, propane, liquefied petroleum gas, natural gas, gaseous fuel",
-    "p2_z_val": "瓦斯, 液化石油氣, 丙烷, 天然氣, 氣體燃料, 鋼瓶",
-    "p3_n_val": "Effect: 減壓調節與引擎動力輸出",
-    "p3_e_val": "engine, motor, pressure regulator, carburetor, auxiliary power",
-    "p3_z_val": "引擎, 發動機, 減壓閥, 化油器, 動力輔助, 燃油供給",
-    "claims_data": [
-        {"要件編號": "Element 1A", "本案 Claim 1 技術要件": "一種瓦斯自行車架構，包含自行車車架及輔助內燃發動機", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
-        {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一可拆卸式高壓氣態燃料儲存鋼瓶，固定於車架下管或後貨架", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
-        {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "一兩級減壓閥與氣化裝置，調控瓦斯氣體恆壓輸送至化油器", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
-        {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "一離合器傳動輪，將發動機輸出扭矩傳送至後輪軸帶動車輛行進", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""}
-    ],
     "last_fetched_patent": None,
     "last_oa_result": None
 }
-
 for k, v in init_defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-st.title("🛡️️ 智慧財產權整合工作台 (離線旗艦版)")
+st.title("🛡️ 智慧財產權整合工作台 (離線旗艦版)")
 st.markdown("⚡ **100% 本地運行模式**：無須設定 API Key，整合 Google Patents 扁平化檢索式、專利號爬取、Claims 比對矩陣、TIPO 規範圖樣生成與法規答辯庫。")
 
 # ------------------------------------------------------------------------------
@@ -681,136 +767,40 @@ tab_patent, tab_trademark, tab_laws = st.tabs([
 # ==============================================================================
 with tab_patent:
     st.sidebar.markdown("---")
-    st.sidebar.header("📁 快速載入 / 自訂技術範本")
+    st.sidebar.header("📁 一鍵切換技術主題 (點擊即生效)")
     
-    # 側邊欄改為可自由輸入的文字框 + 建議詞標籤
-    template_text_query = st.sidebar.text_input(
-        "自訂輸入或搜尋技術主題：",
-        value="",
-        placeholder="例如：瓦斯自行車、電鍍、溫室 或 自訂主題"
-    )
-    
-    st.sidebar.caption("💡 快捷建議標籤（點擊帶入輸入框）：")
-    col_tag1, col_tag2 = st.sidebar.columns(2)
-    with col_tag1:
-        if st.button("🚲 瓦斯自行車", use_container_width=True):
-            template_text_query = "瓦斯自行車"
-    with col_tag2:
-        if st.button("🧪 電鍍光澤劑", use_container_width=True):
-            template_text_query = "電鍍光澤劑"
-            
-    col_tag3, col_tag4 = st.sidebar.columns(2)
-    with col_tag3:
-        if st.button("🌿 溫室病害偵測", use_container_width=True):
-            template_text_query = "溫室病害偵測"
-    with col_tag4:
-        if st.button("🗑️ 空白重置", use_container_width=True):
-            template_text_query = "空白"
-
-    if st.sidebar.button("📥 一鍵載入此主題範本", use_container_width=True):
-        query_kw = template_text_query.strip().lower()
-        if any(k in query_kw for k in ["瓦斯", "自行車", "bike", "lpg"]):
-            st.session_state["patent_title_input"] = "瓦斯動力輔助自行車之氣體燃料供氣與引擎驅動系統"
-            st.session_state["ipc_input_val"] = "B62M 6/00, B62K 11/00, F02M 21/02"
-            st.session_state["cpc_input_val"] = "B62M 6/00, F02M 21/02"
-            st.session_state["p1_n_val"] = "Target: 自行車與輕型二輪載具"
-            st.session_state["p1_e_val"] = "bicycle, bike, two-wheeled vehicle, moped"
-            st.session_state["p1_z_val"] = "自行車, 腳踏車, 二輪車, 輕型機車"
-            st.session_state["p2_n_val"] = "Mechanism: 瓦斯鋼瓶與燃料供氣管路"
-            st.session_state["p2_e_val"] = "LPG, propane, liquefied petroleum gas, natural gas, gaseous fuel"
-            st.session_state["p2_z_val"] = "瓦斯, 液化石油氣, 丙烷, 天然氣, 氣體燃料, 鋼瓶"
-            st.session_state["p3_n_val"] = "Effect: 減壓調節與引擎動力輸出"
-            st.session_state["p3_e_val"] = "engine, motor, pressure regulator, carburetor, auxiliary power"
-            st.session_state["p3_z_val"] = "引擎, 發動機, 減壓閥, 化油器, 動力輔助, 燃油供給"
-            st.session_state["claims_data"] = [
-                {"要件編號": "Element 1A", "本案 Claim 1 技術要件": "一種瓦斯自行車架構，包含自行車車架及輔助內燃發動機", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
-                {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一可拆卸式高壓氣態燃料儲存鋼瓶，固定於車架下管或後貨架", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
-                {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "一兩級減壓閥與氣化裝置，調控瓦斯氣體恆壓輸送至化油器", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
-                {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "一離合器傳動輪，將發動機輸出扭矩傳送至後輪軸帶動車輛行進", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""}
-            ]
-            st.success("✅ 已載入【瓦斯動力自行車】技術範本！")
-
-        elif any(k in query_kw for k in ["電鍍", "鍍金", "光澤"]):
-            st.session_state["patent_title_input"] = "用於貴金屬電鍍之晶粒細化光澤添加劑組成物"
-            st.session_state["ipc_input_val"] = "C25D 3/46, C25D 3/48, C25D 3/62, C25D 3/64"
-            st.session_state["cpc_input_val"] = "C25D 3/46, C25D 3/48, C25D 3/64"
-            st.session_state["p1_n_val"] = "Target: 貴金屬電鍍浴與接觸件"
-            st.session_state["p1_e_val"] = "electroplating bath, gold electroplating, silver plating, contact terminal"
-            st.session_state["p1_z_val"] = "電鍍浴, 鍍金, 鍍銀, 接觸端子, 引線框架, 貴金屬沉積"
-            st.session_state["p2_n_val"] = "Mechanism: 雜環季銨鹽與含硫細化劑協同"
-            st.session_state["p2_e_val"] = "grain refiner, brightener, quaternary ammonium, heterocyclic compound"
-            st.session_state["p2_z_val"] = "晶粒細化劑, 光澤劑, 聚季銨鹽, 芳香雜環, 硫丙基二硫化物, 陰極極化"
-            st.session_state["p3_n_val"] = "Effect: 奈米微晶緻密與耐磨抗氧化"
-            st.session_state["p3_e_val"] = "nanocrystalline, dendritic suppression, low contact resistance, wear resistance"
-            st.session_state["p3_z_val"] = "奈米晶粒, 抑制枝晶, 低接觸阻抗, 耐磨耗, 打線結合力, 鏡面光澤"
-            st.session_state["claims_data"] = [
-                {"要件編號": "Element 1A", "本案 Claim 1 技術要件": "一貴金屬電鍍添加劑，包含 0.1~10 重量份之主光澤劑，其具含氮芳香雜環或聚季銨鹽陽離子結構", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
-                {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "包含 0.05~5 重量份之輔助細化劑，選自含硫或磺酸基有機抑制劑", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
-                {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "該主光澤劑與輔助細化劑之重量比限定為 1:1 至 10:1，具特定吸附平衡比例", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
-                {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "包含 0.5~8 重量份之極化調節界面活性劑與溶劑載體", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""}
-            ]
-            st.session_state["last_oa_result"] = OA_ELECTROPLATING_DOC
-            st.success("✅ 已載入【貴金屬電鍍晶粒細化光澤劑】技術範本！")
-
-        elif any(k in query_kw for k in ["溫室", "作物", "病害", "光譜"]):
-            st.session_state["patent_title_input"] = "多光譜溫室作物病害早期偵測系統"
-            st.session_state["ipc_input_val"] = "A01G 9/24, G01N 21/84, G06V 20/10, G06T 7/00"
-            st.session_state["cpc_input_val"] = "A01G 9/24, G01N 2021/8466, G06V 20/188"
-            st.session_state["p1_n_val"] = "Target: 溫室作物與植物病害"
-            st.session_state["p1_e_val"] = "greenhouse crop, plant disease, foliage pathogen, tomato crop"
-            st.session_state["p1_z_val"] = "溫室作物, 植物病害, 葉片病原, 作物健康, 番茄病害"
-            st.session_state["p2_n_val"] = "Mechanism: 多光譜感測與邊緣影像推論"
-            st.session_state["p2_e_val"] = "multispectral imaging, hyperspectral sensor, narrowband reflectance, edge computing"
-            st.session_state["p2_z_val"] = "多光譜影像, 高光譜感測, 窄波段反射率, 邊緣運算, 深度學習推論"
-            st.session_state["p3_n_val"] = "Effect: 潛伏早期偵測與即時警報"
-            st.session_state["p3_e_val"] = "early lesion detection, asymptomatic stage, pre-symptomatic diagnosis, real-time alert"
-            st.session_state["p3_z_val"] = "早期病斑偵測, 潛伏期診斷, 症狀前檢測, 即時告警, 降低誤判"
-            st.session_state["claims_data"] = [
-                {"要件編號": "Element 1A", "本案 Claim 1 技術要件": "一多光譜感測模組，配置於移動軌道，具有特定吸收峰窄波段濾波感測器", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
-                {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一邊緣推論處理器，對多光譜影像執行植被指數（NDVI/PRI）正規化降維校正", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
-                {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "一病斑早期預警神經網路模型，根據特徵化多光譜資訊預測前症狀潛伏病灶", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""},
-                {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "一環控連動介面，當接收預警訊號時觸發特定分區通風調節與精準噴灑", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""}
-            ]
-            st.success("✅ 已載入【多光譜溫室作物病害早期偵測系統】技術範本！")
-
-        elif any(k in query_kw for k in ["空白", "清空", "重置"]):
-            st.session_state["patent_title_input"] = ""
-            st.session_state["ipc_input_val"] = ""
-            st.session_state["cpc_input_val"] = ""
-            st.session_state["p1_n_val"] = ""
-            st.session_state["p1_e_val"] = ""
-            st.session_state["p1_z_val"] = ""
-            st.session_state["p2_n_val"] = ""
-            st.session_state["p2_e_val"] = ""
-            st.session_state["p2_z_val"] = ""
-            st.session_state["p3_n_val"] = ""
-            st.session_state["p3_e_val"] = ""
-            st.session_state["p3_z_val"] = ""
-            st.session_state["claims_data"] = [
-                {"要件編號": "Element 1A", "本案 Claim 1 技術要件": "", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""}
-            ]
-            st.success("✅ 已重置為全新空白範本！")
-        else:
-            # 使用者自訂名稱
-            custom_title = template_text_query.strip() if template_text_query.strip() else "自訂技術發明標的"
-            st.session_state["patent_title_input"] = custom_title
-            st.session_state["ipc_input_val"] = ""
-            st.session_state["cpc_input_val"] = ""
-            st.session_state["p1_n_val"] = f"Target: {custom_title} 應用載體"
-            st.session_state["p1_e_val"] = ""
-            st.session_state["p1_z_val"] = ""
-            st.session_state["p2_n_val"] = "Mechanism: 核心控制手段與硬體結構"
-            st.session_state["p2_e_val"] = ""
-            st.session_state["p2_z_val"] = ""
-            st.session_state["p3_n_val"] = "Effect: 技術功效與突變增益"
-            st.session_state["p3_e_val"] = ""
-            st.session_state["p3_z_val"] = ""
-            st.session_state["claims_data"] = [
-                {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種{custom_title}，包含基礎承載機構", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": ""}
-            ]
-            st.success(f"✅ 已為您建立自訂主題：【{custom_title}】！")
-
+    # 點擊按鈕直接調用函式載入，徹底解決 Rerun 重置問題
+    if st.sidebar.button("🚲 瓦斯動力自行車", use_container_width=True):
+        load_template_data("bike")
+        st.sidebar.success("✅ 已切換至【瓦斯動力自行車】！")
         st.rerun()
+
+    if st.sidebar.button("🧪 電鍍晶粒細化光澤劑", use_container_width=True):
+        load_template_data("electroplating")
+        st.sidebar.success("✅ 已切換至【電鍍晶粒細化光澤劑】！")
+        st.rerun()
+
+    if st.sidebar.button("🌿 溫室作物病害早期偵測", use_container_width=True):
+        load_template_data("greenhouse")
+        st.sidebar.success("✅ 已切換至【溫室作物病害早期偵測】！")
+        st.rerun()
+
+    if st.sidebar.button("🗑️ 清空所有欄位 (空白重置)", use_container_width=True):
+        load_template_data("reset")
+        st.sidebar.info("✅ 已清空所有欄位！")
+        st.rerun()
+
+    st.sidebar.markdown("---")
+    st.sidebar.caption("✍️ 或自訂全新技術名稱：")
+    col_c1, col_c2 = st.sidebar.columns([3, 1])
+    with col_c1:
+        custom_input_name = st.text_input("輸入名稱", placeholder="例如：折疊電動滑板車", label_visibility="collapsed", key="custom_name_sidebar_input")
+    with col_c2:
+        if st.button("套用", use_container_width=True):
+            if custom_input_name.strip():
+                load_template_data("custom", custom_input_name.strip())
+                st.sidebar.success(f"✅ 已載入【{custom_input_name.strip()}】！")
+                st.rerun()
 
     st.subheader("1. 發明標的名稱與分類號設定 (支援自由打字輸入)")
     col_input1, col_input2, col_input3 = st.columns([2, 1, 1])
@@ -1156,6 +1146,6 @@ with tab_laws:
     with col_ext2:
         st.link_button("🔒 中華民國《營業秘密法》完整法條", "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=J0070028", use_container_width=True)
     with col_ext3:
-        st.link_button("🏷️️ 中華民國《商標法》完整法條", "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=J0070001", use_container_width=True)
+        st.link_button("🏷️ 中華民國《商標法》完整法條", "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=J0070001", use_container_width=True)
     with col_ext4:
         st.link_button("🏛️ 智慧財產局專利/商標審查基準", "https://www.tipo.gov.tw/", use_container_width=True)
