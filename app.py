@@ -453,14 +453,6 @@ IP_LAWS_DB = [
         "explanation": "專利權本質上為「排除他人未經同意實施」之消極排他權。"
     },
     {
-        "category": "化學配方專利專題",
-        "article": "專利法 第 22 條 審查基準",
-        "title": "化學組成物配方之進步性判定（協同效應）",
-        "keywords": "化學配方, 協同效應, Synergistic Effect, 突變性增益",
-        "text": "化學組成物若由已知成分混合而成，原則上視為先前技術之通常替換。\n惟若特定配比範圍內能產生「協同效應（Synergistic Effect）」或「無法預期之技術功效（Unexpected Results）」，且非通常知識者依既有理論所能預測者，應認定具備進步性。",
-        "explanation": "【實務防禦】化學配方答辯核駁時，必須提出實驗數據證明 A+B 在特定比例下的功效遠大於各成分單獨效果相加。"
-    },
-    {
         "category": "營業秘密法",
         "article": "營業秘密法 第 2 條",
         "title": "營業秘密之法定三要件",
@@ -493,10 +485,10 @@ USER_MANUAL_MARKDOWN = """# 📖 智慧財產權整合工作台 操作手冊（�
 ---
 
 ## 模組一：📄 專利檢索與 Claims 比對矩陣
-1. **即時自動推導**：在側邊欄或主畫面輸入關鍵字（如 `植物病蟲害光譜分析`、`氫燃料低壓儲存罐`），按下 Enter 立即重繪帶入 IPC、三支柱與 Claims！
+1. **即時自動推導**：在側邊欄或主畫面輸入關鍵字（如 `液化澱粉芽孢桿菌防治植物青枯病`、`植物病蟲害光譜分析`），按下 Enter 立即重繪帶入 IPC、三支柱與 Claims！
 2. **前案爬取**：輸入專利號（如 `US8608931B2`），直接以 UTF-8 抓取 Abstract 與 Claims 原文。
 3. **全要件比對矩陣**：點擊「⚡ 一鍵自動帶入比對矩陣」即可將當前引證案動態配入表格與申復書中。
-4. **防禦退路併入**：支援一鍵將附屬項（R705/R531 聯鎖波段）併入獨立項作為進步性防線。
+4. **防禦退路併入**：支援一鍵將附屬項併入獨立項作為進步性防線。
 5. **檢索式生成**：產出符合 Google Patents（無結尾分號、短核心片語）與 GPSS 規範的檢索式。
 """
 
@@ -513,8 +505,8 @@ TRADE_SECRET_AGREEMENT_DOC = """營業秘密保密暨離職切結書
 第一條：營業秘密之具體範圍與標的
 --------------------------------------------------------------------------------
 乙方明確知悉並承認，其於任職期間所接觸、知悉或產生之下列資訊，均屬《營業秘密法》第二條所保護之甲方核心營業秘密：
-1. 配方與物化技術參數：特種塗料、電鍍添加劑、表面處理劑之組成物原料配比、特定分子結構、電位極化曲線。
-2. 製程與投料工藝：特定反應溫度、剪切攪拌轉速、熟化時間、加料順序、母液預混調配方法。
+1. 配方與物化技術參數：特種塗料、電鍍添加劑、表面處理劑、微生物活菌配方之組成物原料配比、特定分子結構。
+2. 製程與投料工藝：特定反應溫度、發酵培養基配方、溶氧參數、母液預混調配方法。
 3. 去識別化機制：原料虛擬編號對照表、獨家供應商名單、進貨成本及客製化規格要求。
 4. 研發成果：實驗筆記（Lab Notebook）、未公開之實施例與比較例數據、專利初稿。
 
@@ -537,22 +529,163 @@ TRADE_SECRET_AGREEMENT_DOC = """營業秘密保密暨離職切結書
 """
 
 # ==============================================================================
-# 六、 本地智財語意推理與申復答辯理由書產生引擎
+# 六、 本地智財語意推理核心：全領域多維矩陣推理演算法 (全面補強)
 # ==============================================================================
-def generate_advanced_oa_response(title: str, d1_pno: str, is_fallback_merged: bool = False) -> str:
-    """純本機動態生成專利代理人規格之進步性申復理由書（含 D1+D2 結合阻礙與退路主張）"""
-    low_t = title.lower()
-    now_date = datetime.now().strftime("%Y 年 %m 月 %d 日")
+def execute_semantic_synthesis(title: str):
+    t = title.strip() if title.strip() else "自訂技術發明標的"
+    low_t = t.lower()
+
+    matched_ipcs = []
     
-    if any(k in low_t for k in ["光譜", "病蟲害", "作物", "植物"]):
-        fallback_note = ""
-        if is_fallback_merged:
-            fallback_note = """
+    # ----------------------------------------------------
+    # 維度 1：標的層（Target）多向評分判定
+    # ----------------------------------------------------
+    if any(k in low_t for k in ["芽孢桿菌", "青枯", "病蟲害", "病原", "作物", "植物", "土壤", "真菌", "細菌", "農"]):
+        target_name = f"Target: 農作物植株、根圈土壤與病原微生物"
+        target_en = ["Ralstonia solanacearum", "plant pathogen", "foliage disease", "crop root zone"]
+        target_zh = ["青枯雷爾氏菌", "農作物植株", "土傳病原菌", "根圈土壤", "病害組織"]
+        matched_ipcs.extend(["A01N 63/22", "A01P 1/00", "A01G 7/00"])
+    elif any(k in low_t for k in ["儲氫", "氫能", "儲存罐", "燃料電池", "鋼瓶", "氣瓶", "低壓"]):
+        target_name = f"Target: 固態儲氫合金容器與車載低壓供氫系統"
+        target_en = ["hydrogen storage tank", "metal hydride canister", "fuel cell vehicle"]
+        target_zh = ["儲氫容器", "金屬儲氫合金瓶", "車載供氫系統", "固態儲氫"]
+        matched_ipcs.extend(["F17C 11/00", "H01M 8/04"])
+    elif any(k in low_t for k in ["隔熱", "塗料", "漆", "屋頂", "建築", "溫室"]):
+        target_name = f"Target: 溫室採光屋頂與建築透光覆蓋結構"
+        target_en = ["greenhouse roof", "translucent panel", "building envelope"]
+        target_zh = ["溫室屋頂", "採光覆蓋層", "建築外護結構", "透光板材"]
+        matched_ipcs.extend(["C09D 5/33", "E04D 13/00"])
+    elif any(k in low_t for k in ["車", "自行車", "剪枝", "機械", "自走", "無人機", "機器人"]):
+        target_name = f"Target: 作業載具、自走底盤與多自由度執行機構"
+        target_en = ["self-propelled vehicle", "robotic chassis", "operating assembly"]
+        target_zh = ["自走式載具", "機器人底盤", "作業機械結構"]
+        matched_ipcs.extend(["A01D 34/00", "B60K 17/00"])
+    else:
+        target_name = f"Target: {t} 之特定工作單元與受控載體"
+        target_en = ["target system", "operational assembly", "substrate carrier"]
+        target_zh = ["受控系統", "作業組件", "基底載體"]
+        matched_ipcs.append("G06F 17/00")
+
+    # ----------------------------------------------------
+    # 維度 2：手段層（Mechanism）多向評分判定
+    # ----------------------------------------------------
+    if any(k in low_t for k in ["芽孢桿菌", "生物防治", "生防", "代謝物", "發酵", "菌劑", "菌株"]):
+        mechanism_name = "Mechanism: 活體菌株根圈定殖與脂肽類活性代謝物分泌"
+        mechanism_en = ["Bacillus amyloliquefaciens", "lipopeptide", "surfactin", "iturin", "colonization"]
+        mechanism_zh = ["液化澱粉芽孢桿菌", "抗菌脂肽", "表面活性素", "伊枯草菌素", "根圈定殖"]
+        matched_ipcs.extend(["C12N 1/20", "C12R 1/07"])
+    elif any(k in low_t for k in ["光譜", "影像", "檢測", "遙測", "視覺", "感測"]):
+        mechanism_name = "Mechanism: 高光譜/多光譜窄波段反射率與植被指數特徵演算法"
+        mechanism_en = ["hyperspectral imaging", "vegetation index", "spectral reflectance", "feature extraction"]
+        mechanism_zh = ["高光譜成像", "多光譜感測", "植被指數(NDVI/PRI)", "特徵波段運算"]
+        matched_ipcs.extend(["G01N 21/84", "G06V 20/10"])
+    elif any(k in low_t for k in ["儲氫", "合金", "相變", "翅片", "熱管理"]):
+        mechanism_name = "Mechanism: 儲氫合金材料與微通道內部翅片熱管理架構"
+        mechanism_en = ["metal hydride alloy", "heat exchanger", "internal fin", "phase change material"]
+        mechanism_zh = ["儲氫合金粉末", "換熱器翅片", "相變導熱模組", "多孔過濾構件"]
+        matched_ipcs.extend(["C01B 3/00"])
+    elif any(k in low_t for k in ["觸媒", "催化", "塗層", "奈米", "樹脂"]):
+        mechanism_name = "Mechanism: 奈米功能填料與耐候成膜聚合物基質"
+        mechanism_en = ["nanoparticle filler", "polymer matrix", "catalytic washcoat"]
+        mechanism_zh = ["奈米功能粒子", "成膜樹脂基質", "催化塗層"]
+        matched_ipcs.extend(["B01J 23/42", "C09D 7/61"])
+    else:
+        mechanism_name = "Mechanism: 核心功能模組與閉迴路回饋控制單元"
+        mechanism_en = ["functional module", "closed-loop control", "actuator system"]
+        mechanism_zh = ["核心構件", "閉迴路控制", "致動模組"]
+
+    # ----------------------------------------------------
+    # 維度 3：功效層（Effect）多向評分判定
+    # ----------------------------------------------------
+    if any(k in low_t for k in ["青枯", "病害", "殺菌", "防治", "抑菌"]):
+        effect_name = "Effect: 專一破壞病原細胞膜與誘導植物系統性抗病(ISR)"
+        effect_en = ["membrane disruption", "induced systemic resistance", "biocontrol efficacy"]
+        effect_zh = ["破壞病原細胞壁/膜", "誘導系統性抗性(ISR)", "長效生物防護屏障", "降低發病率"]
+    elif any(k in low_t for k in ["光譜", "早期", "預警", "診斷"]):
+        effect_name = "Effect: 提前 48 至 72 小時無徵狀潛伏期病害精準預警"
+        effect_en = ["asymptomatic detection", "early disease diagnosis", "false alarm reduction"]
+        effect_zh = ["潛伏期無徵狀診斷", "發病前提前預警", "消除肉眼不可見盲區"]
+    elif any(k in low_t for k in ["儲氫", "低壓", "安全"]):
+        effect_name = "Effect: 5 MPa 以下超安全低壓操作與快速吸放氫動力學"
+        effect_en = ["low working pressure", "fast hydrogenation kinetics", "anti-swelling"]
+        effect_zh = ["低壓工作安全", "快速吸放氫", "抑制粉末膨脹碎化"]
+    elif any(k in low_t for k in ["隔熱", "透光", "降溫"]):
+        effect_name = "Effect: 高紅外反射與高可見光透射之光熱選擇性分離"
+        effect_en = ["solar heat rejection", "visible light transmission", "cooling effect"]
+        effect_zh = ["棚內降溫5~10度", "高可見光透過", "長效耐候耐沖刷"]
+    else:
+        effect_name = "Effect: 突破先前技術限制之突變性協同增效與高穩定度"
+        effect_en = ["synergistic effect", "operational stability", "efficiency gain"]
+        effect_zh = ["協同增效", "運作高穩定度", "性能質變躍升"]
+
+    # ----------------------------------------------------
+    # 維度 4：全要件 Claims 自動生成 (根據組合自適應)
+    # ----------------------------------------------------
+    claim_elements = [
+        {
+            "要件編號": "Element 1A",
+            "本案 Claim 1 技術要件": f"一種用於{t}之技術方案，包含基礎承載構件或介質載體",
+            "前案 D1 對應技術": "[D1] 揭露基礎通用型承載或培養介質",
+            "前案 D2 對應技術": "",
+            "符合性判定": "YES (字面讀取)",
+            "差異/進步性說明": "提供系統運作或生物/化學反應之基本物理介面。"
+        },
+        {
+            "要件編號": "Element 1B",
+            "本案 Claim 1 技術要件": f"一核心特徵單元，包含{mechanism_name.replace('Mechanism: ', '')}",
+            "前案 D1 對應技術": "[D1] 僅揭露常規成分或通用硬體",
+            "前案 D2 對應技術": "[D2] 未針對本案特定機制提出技術教示",
+            "符合性判定": "NO (不符/差異點)",
+            "差異/進步性說明": "具備專一性技術手段，非先前技術所能任意置換。"
+        },
+        {
+            "要件編號": "Element 1C",
+            "本案 Claim 1 技術要件": f"特定之關鍵控制參數或成分配比，於受控條件下達成{effect_name.replace('Effect: ', '')}",
+            "前案 D1 對應技術": "[D1] 未揭露特定臨界參數或配比",
+            "前案 D2 對應技術": "[D2] 存在技術偏見或反向教示",
+            "符合性判定": "NO (不符/差異點)",
+            "差異/進步性說明": f"【核心進步性防線】：引證案 D1/D2 欠缺結合動機，本案產生顯著之突變性協同功效（Unexpected Results）。"
+        },
+        {
+            "要件編號": "Element 1D",
+            "本案 Claim 1 技術要件": "一輔助穩定、環境補償或保護助劑構件，維持長期持續運作",
+            "前案 D1 對應技術": "[D1] 揭露常規保護結構",
+            "前案 D2 對應技術": "",
+            "符合性判定": "均等成立 (DOE)",
+            "差異/進步性說明": "消除外界環境干擾，延長使用或反應壽命。"
+        }
+    ]
+
+    clean_ipcs_str = ", ".join(list(dict.fromkeys(matched_ipcs)))
+
+    st.session_state["v_id"] = st.session_state.get("v_id", 0) + 1
+    st.session_state["patent_data"] = {
+        "title": t,
+        "ipc": clean_ipcs_str,
+        "cpc": clean_ipcs_str,
+        "p1_name": target_name,
+        "p1_en": ", ".join(target_en),
+        "p1_zh": ", ".join(target_zh),
+        "p2_name": mechanism_name,
+        "p2_en": ", ".join(mechanism_en),
+        "p2_zh": ", ".join(mechanism_zh),
+        "p3_name": effect_name,
+        "p3_en": ", ".join(effect_en),
+        "p3_zh": ", ".join(effect_zh),
+        "claims": claim_elements
+    }
+    st.session_state["last_oa_result"] = generate_advanced_oa_response(t, "US8608931B2", is_fallback_merged=False)
+
+def generate_advanced_oa_response(title: str, d1_pno: str, is_fallback_merged: bool = False) -> str:
+    now_date = datetime.now().strftime("%Y 年 %m 月 %d 日")
+    fallback_note = ""
+    if is_fallback_merged:
+        fallback_note = """
 【特別補充：請求項第 1 項主動併入附屬項特徵，強化防禦退路（Fallback Position）】
-為使本案能儘速獲准專利，申請人特將原附屬項中「特定窄波段 R705（紅邊）與 R531（光化學反射指數）比值聯鎖運算」及「環境光動態白平衡校正模組」之技術特徵併入獨立項第 1 項中。
-此舉使本案之保護範疇更加收斂且具備不可動搖之進步性壁壘，引證案 D1 與 D2 通篇完全未曾揭露上述特定微觀生理波段之配比反饋。
+為使本案能儘速獲准專利，申請人特將原附屬項中之特定臨界參數、配比聯鎖或專一性活性成分技術特徵併入獨立項第 1 項中。
+此舉使本案之保護範疇更加收斂且具備不可動搖之進步性壁壘，引證案 D1 與 D2 通篇完全未曾揭露上述特定微觀機制。
 """
-        return f"""專利申復理由書（草稿）
+    return f"""專利申復理由書（草稿）
 
 案  號：第 [請填入專利申請案號] 號
 申 請 人：[請填入申請人/專利權人名稱]
@@ -562,9 +695,9 @@ def generate_advanced_oa_response(title: str, d1_pno: str, is_fallback_merged: b
 --------------------------------------------------------------------------------
 一、 案由與前言聲明
 --------------------------------------------------------------------------------
-本件專利申請案業經 貴局審查官惠示審查意見通知函，認本案申請專利範圍請求項第 1 項等技術特徵，為所屬技術領域中具有通常知識者結合引證案 D1（{d1_pno}，多光譜影像裝置）與引證案 D2（常規植物病斑辨識技術）所能輕易置換思及完成，而有違反《專利法》第 22 條第 2 項（進步性）之虞。
+本件專利申請案業經 貴局審查官惠示審查意見通知函，認本案申請專利範圍請求項第 1 項等技術特徵，為所屬技術領域中具有通常知識者結合引證案 D1（{d1_pno}）與引證案 D2 等先前技術所能輕易置換思及完成，而有違反《專利法》第 22 條第 2 項（進步性）之虞。
 
-申請人經研析引證文獻後，謹陳明：引證案 D1 與 D2 之間存在實質之「技術偏見與結合阻礙（Teaching Away）」，且本案達成「提前 48 至 72 小時無徵狀預警」之突變性協同功效，非通常知識者所能輕易思及。
+申請人經研析引證文獻後，謹陳明：引證案 D1 與 D2 之間存在實質之「技術偏見與結合阻礙（Teaching Away）」，且本案達成無法預期之突變性協同增效（Unexpected Results），非通常知識者所能輕易思及。
 {fallback_note}
 --------------------------------------------------------------------------------
 二、 審查基準法理依據
@@ -578,21 +711,19 @@ def generate_advanced_oa_response(title: str, d1_pno: str, is_fallback_merged: b
 --------------------------------------------------------------------------------
 三、 爭點具體比對與實體答辯理由
 --------------------------------------------------------------------------------
-（一） 支柱 A（Target）：引證案 D2 依存於「顯性可見病斑」，與本案「無徵狀潛伏期」存在本質技術斷層
-1. 引證案 D2 所揭示之病害識別系統，其核心演算法完全架構於「可見色差邊緣輪廓（Morphological Contours）」與壞死斑點之圖形切割。
-2. 惟本案請求項第 1 項鎖定之標的為「感染初期無徵狀（Asymptomatic Stage）」之葉片組織。在此階段，葉片表面肉眼可見特徵均屬正常，引證案 D2 所載之輪廓偵測運算將完全陷入失效（Technically Inoperable）。通常知識者根本無動機將依賴外觀病斑之 D2 與 D1 結合來處理無病徵葉片。
+（一） 支柱 A（Target）：作用對象與問題本質存在本質差異
+引證案所針對之問題標的與處理層次不同，本案鎖定深層微觀缺陷或特定生理/物理屏障，通常知識者依引證案之教示絕無結合動機。
 
-（二） 支柱 B（Mechanism）：引證案通篇未曾揭露本案特定窄波段生理特徵演算法
-1. 引證案 D1 僅為通用型全波段光譜成像硬體之任意列舉，未針對植物病理生理反應教示特徵波段；直接結合會引發嚴重的維度災難與反光雜訊。
-2. 本案發明人經反覆實驗突破性發現：特定紅邊波段（R705）與光化學反射指數（R531）之比值突變，與病原菌侵入初期之細胞壁果膠分解具有直接對應性。引證案通篇未曾啟示該特定波段之篩選，審查意見顯屬倒果為因之後見之明（Hindsight Bias）。
+（二） 支柱 B（Mechanism）：引證案通篇未曾揭露本案特定核心手段
+引證案僅為通用技術構件或常規材料之任意列舉，未揭示本案特定配比、波段或反應架構。
 
-（三） 支柱 C（Effect）：本案達成「提前 48 小時阻斷傳播鏈」之無法預期技術功效
-引證案 D1+D2 充其量僅能做到發病後的被動辨識；本案實現了在病原潛伏期提前 48~72 小時之精準預警，使防治手段得以提前介入，此項時間維度上的質變飛躍，完全具備顯著進步性。
+（三） 支柱 C（Effect）：達成無法預期之突變性功效
+本案產生了顯著優於引證案單純相加之技術增益，依法完全符合專利法第 22 條第 2 項之進步性要件。
 
 --------------------------------------------------------------------------------
 四、 結論與懇請事項
 --------------------------------------------------------------------------------
-綜上所陳，本案申請專利範圍請求項第 1 項完全符合《專利法》第 22 條第 2 項規定之進步性要件。懇請 貴局審查官惠予賜准本案專利。
+綜上所陳，本案申請專利範圍請求項第 1 項完全符合進步性要件。懇請 貴局審查官惠予賜准本案專利。
 
 謹呈
 經濟部智慧財產局 公鑒
@@ -600,142 +731,6 @@ def generate_advanced_oa_response(title: str, d1_pno: str, is_fallback_merged: b
 申請人：[請填入申請人/專利代理人簽章]
 日 期：中華民國 {now_date}
 """
-    else:
-        # 通用型進步性申復理由
-        return f"""專利申復理由書（草稿）
-
-案  號：第 [請填入申請案號] 號
-申 請 人：[請填入申請人名稱]
-發明名稱：{title}
-受 文 者：經濟部智慧財產局
-
---------------------------------------------------------------------------------
-一、 案由與前言聲明
---------------------------------------------------------------------------------
-本件專利申請案業經 貴局審查官惠示審查意見通知函，認本案申請專利範圍請求項第 1 項等技術特徵，為通常知識者結合引證案 D1（{d1_pno}）等所能輕易思及完成，而有違反《專利法》第 22 條第 2 項（進步性）之虞。
-
-申請人經研析後，謹陳明：引證案實質上並未揭露本案請求項第 1 項所界定之關鍵技術特徵（Element 1C），更未教示該特定方案能誘發突變性協同增效（Synergistic Effect）。本案依法自具進步性。
-
---------------------------------------------------------------------------------
-二、 爭點具體比對與實體答辯理由
---------------------------------------------------------------------------------
-（一） 引證案未曾揭露本案特定核心限制特徵（Element 1C）
-引證案僅為常規技術元件之教示，未限定各組分之精確動態切換或相互作用機制，通篇存在技術偏見或反向教示。
-
-（二） 本案特定架構產生無法預期之「協同功效」
-本案發明人經反覆實驗突破性發現，當主要組分被嚴格鎖定於本案限定架構時，產生了突變性控制與穩定性功效，使關鍵性能顯著提升。上述性質突變係屬典型的協同增效作用，完全具備進步性。
-
---------------------------------------------------------------------------------
-三、 結論與懇請事項
---------------------------------------------------------------------------------
-綜上所陳，本案完全符合《專利法》第 22 條第 2 項規定之進步性要件。懇請 貴局審查官惠予賜准本案專利。
-
-謹呈
-經濟部智慧財產局 公鑒
-
-申請人：[請填入簽章]
-日 期：中華民國 {now_date}
-"""
-
-def execute_semantic_synthesis(title: str):
-    t = title.strip() if title.strip() else "自訂技術發明標的"
-    low_t = t.lower()
-
-    matched_ipc = []
-    matched_p1_en, matched_p1_zh = [], []
-    matched_p2_en, matched_p2_zh = [], []
-    matched_p3_en, matched_p3_zh = [], []
-
-    # 光譜分析 / 農業影像檢測專屬分支
-    if any(k in low_t for k in ["光譜", "病蟲害", "作物", "植物"]):
-        matched_ipc.extend(["G01N 21/84", "A01G 7/00", "G06V 20/10", "G06T 7/00"])
-        p1_name = "Target: 農作物植株與早期病蟲害受損葉片"
-        matched_p1_en = ["plant disease", "crop pest", "foliage pathogen", "leaf lesion"]
-        matched_p1_zh = ["植物病害", "作物蟲害", "葉片病斑", "潛伏病原", "植株冠層"]
-        p2_name = "Mechanism: 高光譜/多光譜成像與植被指數特徵提取演算法"
-        matched_p2_en = ["hyperspectral imaging", "multispectral sensor", "vegetation index", "spectral reflectance"]
-        matched_p2_zh = ["高光譜影像", "多光譜感測", "窄波段反射率", "植被指數(NDVI/PRI)", "特徵波段篩選"]
-        p3_name = "Effect: 潛伏期無徵狀預警與病斑自動分類識別"
-        matched_p3_en = ["asymptomatic detection", "early pest diagnosis", "disease classification", "real-time alert"]
-        matched_p3_zh = ["潛伏期早期診斷", "無徵狀預警", "肉眼不可見病灶", "抑制擴散", "降低誤判率"]
-        claim_elements = [
-            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種用於{t}之檢測系統，包含一多波段或高光譜光學採集感測器及移動載具", "前案 D1 對應技術": "[D1] 揭露通用型多光譜影像鏡頭總成", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "提供光學反射數據採集結構。"},
-            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一邊緣影像運算單元，對特定波長反射光譜執行正規化降維校正並計算特定植被反射指數", "前案 D1 對應技術": "[D1] 揭露全光譜原始訊號輸出", "前案 D2 對應技術": "[D2] 揭露RGB可見光輪廓辨識", "符合性判定": "NO (不符/差異點)", "差異/進步性說明": "非可見光色彩分析，而是窄波段光譜指數生理運算。"},
-            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "一光譜特徵病徵分類模型，根據水分與葉綠素吸收峰之微幅變異，在葉片表面肉眼顯性壞死前 24~72 小時識別無徵狀之潛伏病原感染", "前案 D1 對應技術": "[D1/D2] 未揭露無徵狀潛伏期光譜指紋映射", "前案 D2 對應技術": "[D2] 僅針對顯性可見病斑被動切割", "符合性判定": "NO (不符/差異點)", "差異/進步性說明": "【核心進步性防線】：引證案 D2 依存於可見病斑邊緣，在潛伏期完全失效；本案突破反向教示達成提前預警。"},
-            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "一環境光自動補償白平衡校正板與定位分區即時通報模組", "前案 D1 對應技術": "[D1] 揭露一般白平衡校正鏡片", "前案 D2 對應技術": "", "符合性判定": "均等成立 (DOE)", "差異/進步性說明": "確保戶外強光下診斷強健性。"}
-        ]
-    elif any(k in low_t for k in ["儲存罐", "儲氫", "低壓儲存", "鋼瓶", "氣罐"]):
-        matched_ipc.extend(["F17C 11/00", "C01B 3/00", "H01M 8/04"])
-        p1_name = "Target: 固態儲氫合金低壓儲氣罐與供氫系統"
-        matched_p1_en = ["low-pressure hydrogen tank", "metal hydride canister", "solid-state hydrogen storage"]
-        matched_p1_zh = ["低壓儲氫罐", "儲氫合金瓶", "固態儲氫", "車載供氫系統"]
-        p2_name = "Mechanism: 稀土金屬儲氫合金粉末與相變微熱管熱管理模組"
-        matched_p2_en = ["metal hydride alloy", "micro-channel heat exchanger", "internal fin", "phase change material"]
-        matched_p2_zh = ["AB5型儲氫合金", "鈦鐵系儲氫粉末", "內部翅片換熱管", "相變導熱模組", "過濾阻火器"]
-        p3_name = "Effect: 5 MPa 以下超安全儲存與快速吸放氫動力學"
-        matched_p3_en = ["low working pressure", "fast hydrogenation kinetics", "thermal runaway prevention"]
-        matched_p3_zh = ["5 MPa以下低壓安全", "杜絕高壓爆破風險", "快速吸放氫", "導熱均衡防膨脹碎化"]
-        claim_elements = [
-            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種用於{t}之儲氫容器，包含耐壓金屬外殼及內部氣體流道過濾閥件", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "容器基本耐壓。"},
-            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一收容於內部之固態儲氫材料，包含金屬儲氫合金粉末", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "低壓固態儲氫。"},
-            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "內部高效換熱翅片與微熱管整合架構，工作壓力低於 5.0 MPa，吸放氫溫差小於 5°C", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "NO (不符/差異點)", "差異/進步性說明": "【核心進步性防線】：低壓安全且解決合金導熱不良。"},
-            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "一彈性緩衝微孔隔層，吸收合金吸放氫應力", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "均等成立 (DOE)", "差異/進步性說明": "防膨脹板結。"}
-        ]
-    elif any(k in low_t for k in ["觸媒", "轉換器", "消氫", "氫燃料汽車"]):
-        matched_ipc.extend(["B01D 53/94", "B01J 23/42", "H01M 8/04"])
-        p1_name = "Target: 氫燃料電池汽車與排氣尾氣淨化系統"
-        matched_p1_en = ["hydrogen fuel cell", "exhaust aftertreatment", "tailpipe emission"]
-        matched_p1_zh = ["氫燃料電池汽車", "排氣後處理", "尾氣淨化", "陰極排氣"]
-        p2_name = "Mechanism: 鉑鈀貴金屬低溫催化塗層與蜂窩載體"
-        matched_p2_en = ["catalytic converter", "bimetallic catalyst", "honeycomb substrate"]
-        matched_p2_zh = ["觸媒轉換器", "鉑鈀催化劑", "蜂窩載體", "低溫消氫塗層"]
-        p3_name = "Effect: 超低溫消氫防爆燃與極致零排放"
-        matched_p3_en = ["hydrogen mitigation", "explosion suppression", "low-temperature light-off"]
-        matched_p3_zh = ["未反應殘氫消除", "防爆燃安全", "低起燃溫度", "耐水氣中毒"]
-        claim_elements = [
-            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種用於{t}之催化淨化裝置，包含外殼及蜂窩載體", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "排氣支撐。"},
-            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一負載於該載體表面之塗層，包含鉑(Pt)與鈀(Pd)雙金屬活性組分", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "YES (字面讀取)", "差異/進步性說明": "微量殘氫低溫氧化。"},
-            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "40~90°C 排氣溫度下將氫氣濃度抑制於 1.0 vol% 以下之非爆炸極限", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "NO (不符/差異點)", "差異/進步性說明": "【核心進步性防線】：解決冷啟動低溫殘氫爆燃風險。"},
-            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "疏水性抗水氣凝結層，防止陰極尾氣水淹中毒", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "均等成立 (DOE)", "差異/進步性說明": "消除水淹。"}
-        ]
-    else:
-        matched_ipc.append("G06F 17/00")
-        p1_name = f"Target: {t} 工作單元"
-        matched_p1_en = ["operation unit", "mechanical assembly", "target carrier"]
-        matched_p1_zh = ["作業單元", "機構本體", "目標載體"]
-        p2_name = "Mechanism: 核心功能模組與控制架構"
-        matched_p2_en = ["functional module", "control architecture", "actuator system"]
-        matched_p2_zh = ["核心功能模組", "控制架構", "致動系統"]
-        p3_name = "Effect: 系統運作效能與穩定度提升"
-        matched_p3_en = ["operational efficiency", "system stability", "precision enhancement"]
-        matched_p3_zh = ["作業效能提升", "運作穩定度", "精度增益"]
-        claim_elements = [
-            {"要件編號": "Element 1A", "本案 Claim 1 技術要件": f"一種{t}，包含基礎承載機架", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": "基礎支撐。"},
-            {"要件編號": "Element 1B", "本案 Claim 1 技術要件": "一核心作業單元配置於該機架", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": "核心構件。"},
-            {"要件編號": "Element 1C", "本案 Claim 1 技術要件": "一動態反饋調控單元以提升穩定度", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": "【核心進步性防線】"},
-            {"要件編號": "Element 1D", "本案 Claim 1 技術要件": "一輔助安全與防護模組", "前案 D1 對應技術": "", "前案 D2 對應技術": "", "符合性判定": "待確認", "差異/進步性說明": "安全防護。"}
-        ]
-
-    clean_ipc = ", ".join(list(dict.fromkeys(matched_ipc)))
-
-    st.session_state["v_id"] = st.session_state.get("v_id", 0) + 1
-    st.session_state["patent_data"] = {
-        "title": t,
-        "ipc": clean_ipc,
-        "cpc": clean_ipc,
-        "p1_name": p1_name,
-        "p1_en": ", ".join(matched_p1_en),
-        "p1_zh": ", ".join(matched_p1_zh),
-        "p2_name": p2_name,
-        "p2_en": ", ".join(matched_p2_en),
-        "p2_zh": ", ".join(matched_p2_zh),
-        "p3_name": p3_name,
-        "p3_en": ", ".join(matched_p3_en),
-        "p3_zh": ", ".join(matched_p3_zh),
-        "claims": claim_elements
-    }
-    # 自動同步載入代理人規格申復答辯理由書
-    st.session_state["last_oa_result"] = generate_advanced_oa_response(t, "US8608931B2", is_fallback_merged=False)
 
 # ==============================================================================
 # 七、 應用程式介面 (Streamlit 渲染)
@@ -750,7 +745,7 @@ if "v_id" not in st.session_state:
     st.session_state["v_id"] = 0
 
 if "patent_data" not in st.session_state:
-    execute_semantic_synthesis("植物病蟲害光譜分析")
+    execute_semantic_synthesis("液化澱粉芽孢桿菌防治植物青枯病")
 
 if "last_fetched_patent" not in st.session_state:
     st.session_state["last_fetched_patent"] = None
@@ -791,7 +786,7 @@ with st.sidebar.expander("🔒 營業秘密離職切結書範本", expanded=Fals
 tab_patent, tab_trademark, tab_laws = st.tabs([
     "📄 專利檢索與 Claims 比對矩陣",
     "🏷️ 商標權佈局與圖樣生成器",
-    "⚖️️ 智財法規速查 (專利法、商標法 ＆ 營業秘密法)"
+    "⚖️ 智財法規速查 (專利法、商標法 ＆ 營業秘密法)"
 ])
 
 # TAB 1: 專利權模組
@@ -801,29 +796,29 @@ with tab_patent:
     
     col_sb1, col_sb2 = st.sidebar.columns(2)
     with col_sb1:
-        if st.button("🌿 光譜病害分析", use_container_width=True):
-            execute_semantic_synthesis("植物病蟲害光譜分析")
+        if st.button("🦠 芽孢桿菌青枯病", use_container_width=True):
+            execute_semantic_synthesis("液化澱粉芽孢桿菌防治植物青枯病")
             st.rerun()
     with col_sb2:
-        if st.button("🛢 低壓儲氫罐", use_container_width=True):
-            execute_semantic_synthesis("氫燃料低壓儲存罐")
+        if st.button("🌿 光譜病害分析", use_container_width=True):
+            execute_semantic_synthesis("植物病蟲害光譜分析")
             st.rerun()
 
     col_sb3, col_sb4 = st.sidebar.columns(2)
     with col_sb3:
-        if st.button("⚡ 氫能觸媒轉換", use_container_width=True):
-            execute_semantic_synthesis("氫燃料汽車觸媒轉換器")
+        if st.button("🛢 低壓儲氫罐", use_container_width=True):
+            execute_semantic_synthesis("氫燃料低壓儲存罐")
             st.rerun()
     with col_sb4:
-        if st.button("🌱 土壤熱水殺菌", use_container_width=True):
-            execute_semantic_synthesis("並聯瓦斯熱水器土壤殺菌")
+        if st.button("⚡ 氫能觸媒轉換", use_container_width=True):
+            execute_semantic_synthesis("氫燃料汽車觸媒轉換器")
             st.rerun()
 
     st.sidebar.markdown("---")
     st.sidebar.subheader("💡 任意主題自動產生器")
     st.sidebar.caption("輸入技術名稱（點擊按鈕或按 Enter 即時連動）：")
     
-    sidebar_query = st.sidebar.text_input("輸入名稱", placeholder="例如：植物病蟲害光譜分析", key="sb_query_box")
+    sidebar_query = st.sidebar.text_input("輸入名稱", placeholder="例如：液化澱粉芽孢桿菌防治植物青枯病", key="sb_query_box")
     if st.sidebar.button("🚀 即刻推導並連動", use_container_width=True):
         if sidebar_query.strip():
             execute_semantic_synthesis(sidebar_query.strip())
@@ -946,11 +941,10 @@ with tab_patent:
 
     with col_btn_oa2:
         if st.button("🛡️ 併入附屬項特徵作為防禦退路 (Fallback Position)", use_container_width=True):
-            # 將附屬項特定波段聯鎖併入 Claim 1
-            cur_data["claims"][2]["本案 Claim 1 技術要件"] += "，且該特定波段限定為 705 nm 紅邊與 531 nm 光化學反射指數 (PRI) 之比值聯鎖運算"
-            cur_data["claims"][2]["差異/進步性說明"] = "【防禦退路突破】：主動限縮特定窄波段細胞壁降解特徵，徹底打破 D1+D2 之顯而易見性。"
+            cur_data["claims"][1]["本案 Claim 1 技術要件"] += "，且該特定代謝物限定為特定有效抑菌濃度比值"
+            cur_data["claims"][1]["差異/進步性說明"] = "【防禦退路突破】：主動限縮特定關鍵特徵，徹底排除 D1+D2 之公知置換疑慮。"
             st.session_state["last_oa_result"] = generate_advanced_oa_response(cur_data["title"], cur_pno, is_fallback_merged=True)
-            st.success("✅ 已將特定生理波段特徵併入獨立項，並更新答辯理由書！")
+            st.success("✅ 已將特定特徵併入獨立項，並更新答辯理由書！")
             st.rerun()
 
     if st.session_state.get("last_oa_result"):
